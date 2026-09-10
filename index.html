@@ -1,0 +1,2017 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Cart Split">
+<meta name="theme-color" content="#c81e5b">
+<meta name="color-scheme" content="light dark">
+<meta name="referrer" content="no-referrer">
+<title>Cart Split Optimizer</title>
+<link id="touchIcon" rel="apple-touch-icon" href="">
+<link id="favIcon" rel="icon" href="">
+<style>
+*{box-sizing:border-box}
+:root{
+  --bg:#f4f5f7; --card:#ffffff; --card2:#fafbfc; --fg:#14171c; --muted:#68707c;
+  --line:#e2e5ea; --line2:#eef0f4;
+  --accent:#c81e5b; --accent-fg:#ffffff;
+  --good:#0a7c42; --goodbg:#e8f6ee;
+  --warn:#8a5a00; --warnbg:#fff5e0; --warnline:#f0d9a0;
+  --bad:#b3261e; --badbg:#fdeceb;
+  --r:14px; --r2:10px;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --bg:#0e1015; --card:#171a21; --card2:#1c2029; --fg:#e9ebef; --muted:#98a1ad;
+    --line:#282e38; --line2:#20252d;
+    --accent:#ff4f83; --accent-fg:#20060f;
+    --good:#43d17f; --goodbg:#0f2a1c;
+    --warn:#ffc861; --warnbg:#2a2210; --warnline:#4a3a14;
+    --bad:#ff6b64; --badbg:#2c1512;
+  }
+}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--bg); color:var(--fg);
+  font:16px/1.45 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  padding-bottom:calc(96px + env(safe-area-inset-bottom));
+  -webkit-tap-highlight-color:transparent;
+}
+.wrap{max-width:760px;margin:0 auto;padding:0 12px}
+header.top{padding:18px 4px 10px}
+header.top h1{margin:0;font-size:22px;letter-spacing:-.02em}
+header.top .sub{margin:4px 0 0;color:var(--muted);font-size:13px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:14px;margin:12px 0}
+.sec-head{display:flex;align-items:center;gap:8px;margin:0 0 10px}
+.sec-head h2{margin:0;font-size:15px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);flex:1}
+.pill{font-size:12px;background:var(--card2);border:1px solid var(--line);border-radius:999px;padding:3px 9px;color:var(--muted);white-space:nowrap}
+.pill.on{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+
+button,input,select,textarea{font-family:inherit;font-size:16px;color:var(--fg)}
+input,select,textarea{
+  width:100%;background:var(--card2);border:1px solid var(--line);border-radius:var(--r2);
+  padding:9px 10px;appearance:none;-webkit-appearance:none;min-height:42px;
+}
+select{background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);
+  background-position:calc(100% - 16px) 19px,calc(100% - 11px) 19px;background-size:5px 5px,5px 5px;background-repeat:no-repeat;padding-right:32px}
+textarea{min-height:110px;line-height:1.35;font-size:14px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--accent);outline-offset:-1px}
+label.f{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:8px}
+label.f > span{display:block;margin-bottom:3px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.grid3{display:grid;grid-template-columns:1.1fr .7fr 1.2fr;gap:8px}
+@media (max-width:380px){.grid3{grid-template-columns:1fr 1fr}}
+@media (max-width:480px){.item .grid2{grid-template-columns:1fr}.item .flags{padding-bottom:0;margin-top:2px}}
+
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  min-height:44px;padding:0 14px;border-radius:var(--r2);border:1px solid var(--line);
+  background:var(--card2);color:var(--fg);font-size:15px;font-weight:500;cursor:pointer;
+}
+.btn:active{transform:translateY(1px)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-fg);font-weight:600}
+.btn.ghost{background:transparent}
+.btn.danger{color:var(--bad);border-color:var(--line)}
+.btn.sm{min-height:36px;padding:0 10px;font-size:13px}
+.btn.wide{width:100%}
+.btnrow{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.btnrow .btn{flex:1 1 auto}
+
+.item,.rowcard{background:var(--card2);border:1px solid var(--line);border-radius:var(--r2);padding:10px;margin-bottom:10px}
+.item-top{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+.item-top input{flex:1}
+.icon{flex:0 0 auto;width:42px;height:42px;min-height:42px;padding:0;border-radius:var(--r2);
+  border:1px solid var(--line);background:var(--card);color:var(--muted);font-size:20px;line-height:1;cursor:pointer}
+.flags{display:flex;gap:6px;align-items:flex-end;flex-wrap:wrap;padding-bottom:8px}
+.chk{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--muted);
+  background:var(--card);border:1px solid var(--line);border-radius:999px;padding:6px 10px;min-height:36px;cursor:pointer}
+.chk input{width:16px;height:16px;min-height:16px;padding:0;margin:0;accent-color:var(--accent)}
+.chk.on{color:var(--fg);border-color:var(--accent)}
+.linetot{font-size:12px;color:var(--muted);text-align:right}
+.linetot b{color:var(--fg)}
+
+.rowcard .rc-head{display:flex;align-items:center;gap:8px}
+.rowcard .rc-head .rc-title{flex:1;min-width:0}
+.rc-title .t1{font-weight:600;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rc-title .t2{font-size:12px;color:var(--muted);margin-top:2px}
+.tag{display:inline-block;font-size:11px;padding:2px 7px;border-radius:999px;border:1px solid var(--line);
+  background:var(--card);color:var(--muted);margin-right:4px;margin-top:4px}
+.tag.warn{background:var(--warnbg);border-color:var(--warnline);color:var(--warn)}
+.tag.off{opacity:.55;text-decoration:line-through}
+.code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;letter-spacing:.02em}
+
+.note{font-size:13px;color:var(--muted);margin:6px 0 0}
+.empty{color:var(--muted);font-size:14px;padding:8px 2px}
+
+.banner{border-radius:var(--r2);padding:10px 12px;margin:8px 0;font-size:14px;border:1px solid}
+.banner.warn{background:var(--warnbg);border-color:var(--warnline);color:var(--warn)}
+.banner.bad{background:var(--badbg);border-color:var(--bad);color:var(--bad)}
+.banner.good{background:var(--goodbg);border-color:var(--good);color:var(--good)}
+.banner b{font-weight:700}
+
+.kv{display:flex;justify-content:space-between;gap:12px;font-size:14px;padding:3px 0}
+.kv .k{color:var(--muted)}
+.kv .v{font-variant-numeric:tabular-nums;white-space:nowrap}
+.kv.tot{border-top:1px solid var(--line);margin-top:6px;padding-top:7px;font-weight:700;font-size:16px}
+.kv.sub .v{color:var(--muted)}
+.kv .v.neg{color:var(--good)}
+
+.order{border:1px solid var(--line);border-radius:var(--r2);padding:12px;margin:10px 0;background:var(--card2)}
+.order.baseline{border-style:dashed}
+.order h3{margin:0 0 8px;font-size:15px;display:flex;align-items:center;gap:8px}
+.order h3 .n{flex:1}
+.olist{list-style:none;margin:0 0 8px;padding:0;font-size:14px}
+.olist li{display:flex;gap:8px;padding:3px 0;border-bottom:1px solid var(--line2)}
+.olist li .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.olist li .q{color:var(--muted);font-size:12px;white-space:nowrap}
+.olist li .p{font-variant-numeric:tabular-nums;white-space:nowrap}
+.olist li .fl{color:var(--warn);font-size:11px}
+.done-wrap{display:flex;align-items:center;gap:8px;margin-top:10px;padding-top:9px;border-top:1px solid var(--line)}
+.done-wrap label{display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer;flex:1;min-height:40px}
+.done-wrap input{width:22px;height:22px;min-height:22px;padding:0;accent-color:var(--accent)}
+.order.done{opacity:.62}
+
+.hint{font-size:13px;background:var(--card2);border:1px solid var(--line);border-left:3px solid var(--accent);
+  border-radius:var(--r2);padding:9px 11px;margin:7px 0}
+.hint .d{color:var(--muted);font-size:12px;margin-top:3px}
+
+.bar{
+  position:fixed;left:0;right:0;bottom:0;z-index:40;
+  background:color-mix(in srgb,var(--card) 92%,transparent);
+  -webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
+  border-top:1px solid var(--line);
+  padding:9px 12px calc(9px + env(safe-area-inset-bottom));
+  display:flex;align-items:center;gap:10px;
+}
+.bar .btn{flex:1;min-height:50px;font-size:17px}
+.bar .ver{font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap;text-align:right;line-height:1.2}
+footer.foot{color:var(--muted);font-size:12px;text-align:center;padding:14px 8px 4px}
+
+.ov{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center}
+.ov[hidden]{display:none}
+.ov .sheet{
+  background:var(--card);width:100%;max-width:760px;max-height:92vh;overflow-y:auto;
+  -webkit-overflow-scrolling:touch;border-radius:16px 16px 0 0;
+  padding:14px 14px calc(14px + env(safe-area-inset-bottom));border:1px solid var(--line);
+}
+.ov h3{margin:2px 0 12px;font-size:17px}
+.sheet .btnrow{position:sticky;bottom:-14px;background:var(--card);padding:10px 0 2px;margin-top:14px;border-top:1px solid var(--line)}
+.stack-list{display:flex;flex-wrap:wrap;gap:6px}
+.spin{display:inline-block;width:15px;height:15px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:sp .7s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.stale{color:var(--warn);font-size:12px}
+</style>
+</head>
+<body>
+<datalist id="catlist"></datalist>
+
+<div class="wrap">
+  <header class="top">
+    <h1>Cart Split Optimizer</h1>
+    <p class="sub">Read-only planner. It never touches your cart &mdash; it prints a plan you place by hand.</p>
+  </header>
+
+  <section class="card">
+    <div class="sec-head"><h2>1 &middot; Items</h2><span class="pill" id="itemsPill">0 items</span></div>
+    <div id="itemList"></div>
+    <div class="btnrow">
+      <button class="btn primary" id="addItemBtn">+ Add item</button>
+      <button class="btn ghost" id="demoBtn">Sample cart</button>
+      <button class="btn ghost danger" id="clearItemsBtn">Clear</button>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="sec-head"><h2>2 &middot; Coupons</h2><span class="pill" id="couponsPill">0 active</span></div>
+    <div id="couponList"></div>
+    <div class="btnrow"><button class="btn" id="addCouponBtn">+ Add coupon</button></div>
+    <p class="note">A coupon is a <b>gate</b> (minimum spend and/or item count) plus one <b>payoff</b>.</p>
+  </section>
+
+  <section class="card">
+    <div class="sec-head"><h2>3 &middot; Card offers</h2><span class="pill" id="offersPill">0 active</span></div>
+    <div id="offerList"></div>
+    <div class="btnrow"><button class="btn" id="addOfferBtn">+ Add card offer</button></div>
+    <p class="note">Cashback is reported on its own line under the grand total, never inside an order total.</p>
+  </section>
+
+  <section class="card">
+    <div class="sec-head"><h2>4 &middot; Shipping &amp; limits</h2></div>
+    <div class="grid2">
+      <label class="f"><span>Free shipping at</span><input id="setFreeThresh" type="text" inputmode="decimal"></label>
+      <label class="f"><span>Flat shipping fee</span><input id="setFlatFee" type="text" inputmode="decimal"></label>
+    </div>
+    <label class="f"><span>Free-shipping threshold measured on</span>
+      <select id="setMeasure">
+        <option value="after">Subtotal after coupon discount</option>
+        <option value="before">Subtotal before discount</option>
+      </select>
+    </label>
+    <div class="grid2">
+      <label class="f"><span>Max orders (K)</span>
+        <select id="setMaxOrders">
+          <option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
+        </select>
+      </label>
+      <label class="f"><span>Currency symbol</span><input id="setCurrency" maxlength="3"></label>
+    </div>
+    <p class="note">Shipping is charged once per order. Defaults are placeholders &mdash; set them to what your region actually charges.</p>
+  </section>
+
+  <section class="card">
+    <div class="sec-head"><h2>5 &middot; Backup</h2></div>
+    <div class="btnrow">
+      <button class="btn" id="exportBtn">Export JSON</button>
+      <button class="btn" id="copyJsonBtn">Copy JSON</button>
+      <button class="btn ghost" id="importBtn">Import JSON</button>
+      <button class="btn ghost danger" id="resetBtn">Reset all</button>
+    </div>
+    <p class="note">Everything lives in this device&rsquo;s local storage. No login, no server, no analytics.</p>
+  </section>
+
+  <div id="warnings"></div>
+
+  <section class="card" id="resultsCard">
+    <div class="sec-head"><h2>6 &middot; Plan</h2><span class="pill" id="modePill">not run</span></div>
+    <div id="results"><p class="empty">Add items and coupons, then tap <b>Optimize</b>.</p></div>
+  </section>
+
+  <footer class="foot">
+    Cart Split Optimizer &mdash; <span class="verText"></span> &middot; step 1: manual entry<br>
+    Read-only. Nothing here logs in, adds to a cart, or checks out.
+  </footer>
+</div>
+
+<div class="bar">
+  <button class="btn primary" id="optimizeBtn">Optimize</button>
+  <div class="ver"><span class="verText"></span><br><span id="staleNote" class="stale"></span></div>
+</div>
+
+<div class="ov" id="overlay" hidden><div class="sheet" id="sheet"></div></div>
+
+<script src="https://cdn.jsdelivr.net/npm/javascript-lp-solver@0.4.24/prod/solver.js" defer></script>
+<script>
+"use strict";
+/* ==========================================================================
+   Cart Split Optimizer
+   Step 1: manual entry -> optimizer -> plan. No network except the CDN solver.
+   ========================================================================== */
+
+var VERSION = "0.1.0";
+var STORE_KEY = "sco.v1";
+var TIME_BUDGET_MS = 2600;          /* hard ceiling; target is < 3s on an A-series iPad */
+var MILP_MAX_ITEMS = 12;            /* above this the MILP branch-and-bound is too slow */
+var MILP_MAX_ORDERS = 3;
+var MILP_MAX_LAYOUTS = 90;          /* coupon layouts enumerated before we give up on exhaustive */
+var MAX_SETS_PER_ORDER = 12;
+
+var $ = function (s, r) { return (r || document).querySelector(s); };
+var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
+var now = function () { return (performance && performance.now) ? performance.now() : Date.now(); };
+
+/* ---------------------------------------------------------------- money --
+   Everything inside the optimizer is integer cents. Floats only touch the
+   input fields and the formatter. */
+function toC(v) {
+  var n = parseFloat(String(v == null ? "" : v).replace(/[^0-9.\-]/g, ""));
+  if (!isFinite(n)) return 0;
+  return Math.round(n * 100);
+}
+function fmt(c) {
+  var neg = c < 0, a = Math.abs(c) / 100;
+  return (neg ? "-" : "") + state.settings.currency + a.toFixed(2);
+}
+function fmtSigned(c) { return (c > 0 ? "+" : "") + fmt(c); }
+function uid() { return Math.random().toString(36).slice(2, 9) + Date.now().toString(36).slice(-3); }
+function today() { return new Date().toISOString().slice(0, 10); }
+function esc(s) {
+  return String(s == null ? "" : s).replace(/[&<>"']/g, function (m) {
+    return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m];
+  });
+}
+function lc(s) { return String(s == null ? "" : s).trim().toLowerCase(); }
+
+/* ---------------------------------------------------------------- state -- */
+var state = {
+  items: [],
+  coupons: [],
+  offers: [],
+  shipping: { freeThreshold: 29, flatFee: 3.99, perOrder: true, measure: "after" },
+  settings: { maxOrders: 3, currency: "$" },
+  done: {},
+  categories: []
+};
+
+function newItem(p) {
+  p = p || {};
+  return {
+    id: p.id || uid(),
+    name: p.name || "",
+    price: p.price == null ? "" : p.price,
+    qty: p.qty == null ? 1 : p.qty,
+    category: p.category || "",
+    brand: p.brand || "",
+    flags: {
+      flashSale: !!(p.flags && p.flags.flashSale),
+      clearance: !!(p.flags && p.flags.clearance),
+      bundle: !!(p.flags && p.flags.bundle)
+    }
+  };
+}
+function newCoupon(p) {
+  p = p || {};
+  return {
+    id: p.id || uid(),
+    code: p.code || "",
+    label: p.label || "",
+    payoff: p.payoff || "percent",          /* fixed | percent | cheapestFree | freeShipping */
+    value: p.value == null ? "" : p.value,
+    maxDiscount: p.maxDiscount == null ? null : p.maxDiscount,
+    minSpend: p.minSpend == null ? 0 : p.minSpend,
+    minItems: p.minItems == null ? 0 : p.minItems,
+    includeCategories: p.includeCategories || [],
+    excludeCategories: p.excludeCategories || [],
+    appliesToDiscountedItems: !!p.appliesToDiscountedItems,
+    singleUse: p.singleUse === undefined ? true : !!p.singleUse,
+    stackableWith: p.stackableWith || [],
+    expires: p.expires || "",
+    uncertain: !!p.uncertain,
+    notes: p.notes || "",
+    enabled: p.enabled === undefined ? true : !!p.enabled
+  };
+}
+function newOffer(p) {
+  p = p || {};
+  return {
+    id: p.id || uid(),
+    label: p.label || "",
+    minSpend: p.minSpend == null ? 0 : p.minSpend,
+    cashback: p.cashback == null ? "" : p.cashback,
+    perTransaction: p.perTransaction === undefined ? true : !!p.perTransaction,
+    maxUses: p.maxUses == null ? 1 : p.maxUses,
+    enabled: p.enabled === undefined ? true : !!p.enabled
+  };
+}
+
+/* -------------------------------------------------------------- storage -- */
+var saveTimer = null;
+function save() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(function () {
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(snapshot())); }
+    catch (e) { banner("bad", "Could not save to local storage: " + e.message); }
+  }, 200);
+}
+function snapshot() {
+  return {
+    v: 1, version: VERSION,
+    items: state.items, coupons: state.coupons, offers: state.offers,
+    shipping: state.shipping, settings: state.settings,
+    done: state.done, categories: state.categories
+  };
+}
+function load() {
+  var raw;
+  try { raw = localStorage.getItem(STORE_KEY); } catch (e) { return; }
+  if (!raw) return;
+  try { adopt(JSON.parse(raw)); } catch (e) { /* corrupt payload: start clean */ }
+}
+function adopt(d) {
+  if (!d || typeof d !== "object") throw new Error("not an object");
+  state.items = (d.items || []).map(newItem);
+  state.coupons = (d.coupons || []).map(newCoupon);
+  state.offers = (d.offers || []).map(newOffer);
+  if (d.shipping) {
+    state.shipping.freeThreshold = d.shipping.freeThreshold != null ? d.shipping.freeThreshold : 29;
+    state.shipping.flatFee = d.shipping.flatFee != null ? d.shipping.flatFee : 3.99;
+    state.shipping.measure = d.shipping.measure === "before" ? "before" : "after";
+    state.shipping.perOrder = true;
+  }
+  if (d.settings) {
+    state.settings.maxOrders = Math.min(5, Math.max(1, parseInt(d.settings.maxOrders, 10) || 3));
+    state.settings.currency = d.settings.currency || "$";
+  }
+  state.done = d.done || {};
+  state.categories = d.categories || [];
+}
+
+/* ------------------------------------------------------------ categories -- */
+function rememberCategory(c) {
+  c = String(c || "").trim();
+  if (!c) return;
+  if (state.categories.some(function (x) { return lc(x) === lc(c); })) return;
+  state.categories.push(c);
+  state.categories.sort(function (a, b) { return a.localeCompare(b); });
+  renderCatList();
+}
+function knownCategories() {
+  var seen = {}, out = [];
+  state.categories.concat(state.items.map(function (i) { return i.category; }))
+    .forEach(function (c) {
+      c = String(c || "").trim();
+      if (c && !seen[lc(c)]) { seen[lc(c)] = 1; out.push(c); }
+    });
+  out.sort(function (a, b) { return a.localeCompare(b); });
+  return out;
+}
+function renderCatList() {
+  $("#catlist").innerHTML = knownCategories().map(function (c) {
+    return '<option value="' + esc(c) + '">';
+  }).join("");
+}
+
+/* ------------------------------------------------------------- staleness -- */
+var stale = true;
+function markStale() {
+  stale = true;
+  $("#staleNote").textContent = "inputs changed";
+}
+function clearStale() { stale = false; $("#staleNote").textContent = ""; }
+
+/* ------------------------------------------------------------ item table -- */
+function itemValueC(it) { return toC(it.price) * Math.max(0, Math.round(Number(it.qty) || 0)); }
+
+function renderItems() {
+  var host = $("#itemList");
+  host.innerHTML = state.items.length ? "" :
+    '<p class="empty">No items yet. Tap <b>+ Add item</b>, or load the sample cart to see how a plan reads.</p>';
+  state.items.forEach(function (it) { host.appendChild(itemRow(it)); });
+  var units = state.items.reduce(function (a, i) { return a + (Math.round(Number(i.qty) || 0)); }, 0);
+  var total = state.items.reduce(function (a, i) { return a + itemValueC(i); }, 0);
+  $("#itemsPill").textContent = state.items.length + " lines / " + units + " units / " + fmt(total);
+  renderCatList();
+}
+
+function itemRow(it) {
+  var d = document.createElement("div");
+  d.className = "item";
+  d.dataset.id = it.id;
+  d.innerHTML =
+    '<div class="item-top">' +
+      '<input data-f="name" placeholder="Item name" value="' + esc(it.name) + '" autocomplete="off">' +
+      '<button class="icon" data-act="del" aria-label="Delete item">&times;</button>' +
+    '</div>' +
+    '<div class="grid3">' +
+      '<label class="f"><span>Unit price</span><input data-f="price" type="text" inputmode="decimal" value="' + esc(it.price) + '"></label>' +
+      '<label class="f"><span>Qty</span><input data-f="qty" type="number" inputmode="numeric" min="0" step="1" value="' + esc(it.qty) + '"></label>' +
+      '<label class="f"><span>Category</span><input data-f="category" list="catlist" autocomplete="off" value="' + esc(it.category) + '"></label>' +
+    '</div>' +
+    '<div class="grid2">' +
+      '<label class="f"><span>Brand</span><input data-f="brand" autocomplete="off" value="' + esc(it.brand) + '"></label>' +
+      '<div class="flags">' +
+        flagChip(it, "flashSale", "Flash sale") +
+        flagChip(it, "clearance", "Clearance") +
+        flagChip(it, "bundle", "Bundle") +
+      '</div>' +
+    '</div>' +
+    '<div class="linetot">Line total <b data-line>' + fmt(itemValueC(it)) + '</b></div>';
+  return d;
+}
+function flagChip(it, key, label) {
+  return '<label class="chk' + (it.flags[key] ? " on" : "") + '">' +
+    '<input type="checkbox" data-f="flag:' + key + '"' + (it.flags[key] ? " checked" : "") + '>' + label + "</label>";
+}
+
+function itemById(id) {
+  for (var i = 0; i < state.items.length; i++) if (state.items[i].id === id) return state.items[i];
+  return null;
+}
+
+$("#itemList").addEventListener("input", function (e) {
+  var row = e.target.closest(".item"); if (!row) return;
+  var it = itemById(row.dataset.id); if (!it) return;
+  var f = e.target.dataset.f; if (!f) return;
+  if (f.indexOf("flag:") === 0) {
+    it.flags[f.slice(5)] = e.target.checked;
+    e.target.closest(".chk").classList.toggle("on", e.target.checked);
+  } else if (f === "qty") {
+    it.qty = e.target.value === "" ? "" : Math.max(0, parseInt(e.target.value, 10) || 0);
+  } else {
+    it[f] = e.target.value;
+  }
+  var lt = row.querySelector("[data-line]");
+  if (lt) lt.textContent = fmt(itemValueC(it));
+  $("#itemsPill").textContent = state.items.length + " lines / " +
+    state.items.reduce(function (a, i) { return a + (Math.round(Number(i.qty) || 0)); }, 0) + " units / " +
+    fmt(state.items.reduce(function (a, i) { return a + itemValueC(i); }, 0));
+  save(); markStale();
+});
+$("#itemList").addEventListener("change", function (e) {
+  if (e.target.dataset.f === "category") { rememberCategory(e.target.value); save(); }
+});
+$("#itemList").addEventListener("click", function (e) {
+  var b = e.target.closest("[data-act]"); if (!b) return;
+  var row = e.target.closest(".item");
+  if (b.dataset.act === "del") {
+    state.items = state.items.filter(function (i) { return i.id !== row.dataset.id; });
+    renderItems(); save(); markStale();
+  }
+});
+
+$("#addItemBtn").addEventListener("click", function () {
+  var it = newItem();
+  state.items.push(it);
+  renderItems(); save(); markStale();
+  var rows = $$("#itemList .item");
+  var last = rows[rows.length - 1];
+  if (last) { last.scrollIntoView({ block: "center", behavior: "smooth" }); last.querySelector("input").focus(); }
+});
+$("#clearItemsBtn").addEventListener("click", function () {
+  if (!state.items.length) return;
+  if (!confirm("Remove all " + state.items.length + " item lines? Coupons and card offers stay.")) return;
+  state.items = []; renderItems(); save(); markStale();
+});
+
+/* ------------------------------------------------------------- coupons -- */
+var PAYOFF_LABEL = {
+  fixed: "off the eligible subtotal",
+  percent: "% off eligible items",
+  cheapestFree: "cheapest eligible unit(s) free",
+  freeShipping: "free shipping on that order"
+};
+
+function couponById(id) {
+  for (var i = 0; i < state.coupons.length; i++) if (state.coupons[i].id === id) return state.coupons[i];
+  return null;
+}
+function isExpired(c) { return !!(c.expires && c.expires < today()); }
+function couponActive(c) { return c.enabled !== false && !isExpired(c); }
+
+function payoffSummary(c) {
+  var v = Number(c.value) || 0;
+  if (c.payoff === "fixed") return fmt(toC(c.value)) + " off";
+  if (c.payoff === "percent") return v + "% off" + (c.maxDiscount ? " (max " + fmt(toC(c.maxDiscount)) + ")" : "");
+  if (c.payoff === "cheapestFree") return Math.max(1, Math.round(v)) + " cheapest unit" + (v > 1 ? "s" : "") + " free";
+  return "free shipping";
+}
+function gateSummary(c) {
+  var g = [];
+  if (Number(c.minSpend) > 0) g.push("spend " + fmt(toC(c.minSpend)));
+  if (Number(c.minItems) > 0) g.push(Math.round(c.minItems) + "+ items");
+  return g.length ? g.join(" and ") : "no minimum";
+}
+
+function renderCoupons() {
+  var host = $("#couponList");
+  host.innerHTML = state.coupons.length ? "" :
+    '<p class="empty">No coupons yet. Without at least one coupon the optimizer can only chase the free-shipping threshold.</p>';
+  state.coupons.forEach(function (c) {
+    var d = document.createElement("div");
+    d.className = "rowcard";
+    d.dataset.id = c.id;
+    var tags = [];
+    tags.push('<span class="tag">' + esc(gateSummary(c)) + "</span>");
+    if (c.singleUse) tags.push('<span class="tag">single use</span>');
+    if (c.appliesToDiscountedItems) tags.push('<span class="tag">covers sale items</span>');
+    else tags.push('<span class="tag">full price only</span>');
+    if (c.includeCategories.length) tags.push('<span class="tag">only ' + esc(c.includeCategories.join(", ")) + "</span>");
+    if (c.excludeCategories.length) tags.push('<span class="tag">not ' + esc(c.excludeCategories.join(", ")) + "</span>");
+    if (c.stackableWith.length) tags.push('<span class="tag">stacks with ' + c.stackableWith.length + "</span>");
+    if (c.uncertain) tags.push('<span class="tag warn">terms uncertain</span>');
+    if (isExpired(c)) tags.push('<span class="tag warn">expired ' + esc(c.expires) + "</span>");
+    d.innerHTML =
+      '<div class="rc-head">' +
+        '<label class="chk' + (c.enabled !== false ? " on" : "") + '"><input type="checkbox" data-act="toggle"' +
+          (c.enabled !== false ? " checked" : "") + '></label>' +
+        '<div class="rc-title">' +
+          '<div class="t1' + (couponActive(c) ? "" : " off") + '"><span class="code">' + esc(c.code || "(no code)") + "</span>" +
+            (c.label ? " &middot; " + esc(c.label) : "") + "</div>" +
+          '<div class="t2">' + esc(payoffSummary(c)) + "</div>" +
+        "</div>" +
+        '<button class="btn sm" data-act="edit">Edit</button>' +
+      "</div>" +
+      "<div>" + tags.join("") + "</div>";
+    host.appendChild(d);
+  });
+  var n = state.coupons.filter(couponActive).length;
+  $("#couponsPill").textContent = n + " active / " + state.coupons.length;
+}
+
+$("#couponList").addEventListener("click", function (e) {
+  var b = e.target.closest("[data-act]"); if (!b) return;
+  var c = couponById(e.target.closest(".rowcard").dataset.id); if (!c) return;
+  if (b.dataset.act === "edit") editCoupon(c);
+});
+$("#couponList").addEventListener("change", function (e) {
+  if (e.target.dataset.act !== "toggle") return;
+  var c = couponById(e.target.closest(".rowcard").dataset.id); if (!c) return;
+  c.enabled = e.target.checked;
+  renderCoupons(); save(); markStale();
+});
+$("#addCouponBtn").addEventListener("click", function () { editCoupon(null); });
+
+function editCoupon(existing) {
+  var c = existing ? JSON.parse(JSON.stringify(existing)) : newCoupon();
+  var cats = knownCategories();
+  var others = state.coupons.filter(function (x) { return x.id !== c.id; });
+  openSheet(
+    (existing ? "Edit coupon" : "New coupon"),
+    '<div class="grid2">' +
+      '<label class="f"><span>Code</span><input id="cCode" value="' + esc(c.code) + '" autocapitalize="characters" autocomplete="off"></label>' +
+      '<label class="f"><span>Label (yours)</span><input id="cLabel" value="' + esc(c.label) + '" autocomplete="off"></label>' +
+    "</div>" +
+    '<label class="f"><span>Payoff</span><select id="cPayoff">' +
+      opt("percent", "Percent off eligible items", c.payoff) +
+      opt("fixed", "Fixed amount off", c.payoff) +
+      opt("cheapestFree", "Cheapest eligible unit(s) free", c.payoff) +
+      opt("freeShipping", "Free shipping", c.payoff) +
+    "</select></label>" +
+    '<div class="grid2" id="cValueRow">' +
+      '<label class="f"><span id="cValueLbl">Value</span><input id="cValue" type="text" inputmode="decimal" value="' + esc(c.value) + '"></label>' +
+      '<label class="f" id="cMaxWrap"><span>Max discount (blank = none)</span><input id="cMax" type="text" inputmode="decimal" value="' + esc(c.maxDiscount == null ? "" : c.maxDiscount) + '"></label>' +
+    "</div>" +
+    '<div class="grid2">' +
+      '<label class="f"><span>Gate: min spend</span><input id="cMinSpend" type="text" inputmode="decimal" value="' + esc(c.minSpend) + '"></label>' +
+      '<label class="f"><span>Gate: min items</span><input id="cMinItems" type="number" inputmode="numeric" min="0" step="1" value="' + esc(c.minItems) + '"></label>' +
+    "</div>" +
+    '<label class="f"><span>Only these categories (comma separated, blank = all)</span>' +
+      '<input id="cInc" list="catlist" value="' + esc(c.includeCategories.join(", ")) + '" autocomplete="off"></label>' +
+    '<label class="f"><span>Never these categories</span>' +
+      '<input id="cExc" list="catlist" value="' + esc(c.excludeCategories.join(", ")) + '" autocomplete="off"></label>' +
+    (cats.length ? '<p class="note">Known categories: ' + esc(cats.join(", ")) + "</p>" : "") +
+    '<div class="flags" style="margin:10px 0">' +
+      chk("cDisc", "Applies to flash sale / clearance items", c.appliesToDiscountedItems) +
+      chk("cSingle", "Single use across the whole split", c.singleUse) +
+      chk("cUncertain", "Terms uncertain &mdash; warn me", c.uncertain) +
+    "</div>" +
+    '<label class="f"><span>Stacks with</span></label>' +
+    '<div class="stack-list">' + (others.length ? others.map(function (o) {
+      return chk("stk_" + o.id, esc(o.code || o.label || "(unnamed)"), c.stackableWith.indexOf(o.id) >= 0);
+    }).join("") : '<span class="empty">No other coupons yet.</span>') + "</div>" +
+    '<label class="f" style="margin-top:10px"><span>Expires (blank = never)</span><input id="cExpires" type="date" value="' + esc(c.expires) + '"></label>' +
+    '<label class="f"><span>Notes</span><input id="cNotes" value="' + esc(c.notes) + '" autocomplete="off"></label>',
+    function commit() {
+      c.code = $("#cCode").value.trim();
+      c.label = $("#cLabel").value.trim();
+      c.payoff = $("#cPayoff").value;
+      c.value = $("#cValue").value.trim();
+      var mx = $("#cMax").value.trim();
+      c.maxDiscount = mx === "" ? null : mx;
+      c.minSpend = $("#cMinSpend").value.trim() || 0;
+      c.minItems = parseInt($("#cMinItems").value, 10) || 0;
+      c.includeCategories = splitList($("#cInc").value);
+      c.excludeCategories = splitList($("#cExc").value);
+      c.appliesToDiscountedItems = $("#cDisc").checked;
+      c.singleUse = $("#cSingle").checked;
+      c.uncertain = $("#cUncertain").checked;
+      c.expires = $("#cExpires").value;
+      c.notes = $("#cNotes").value.trim();
+      c.stackableWith = others.filter(function (o) { var el = $("#stk_" + o.id); return el && el.checked; })
+        .map(function (o) { return o.id; });
+      /* keep the other side of every stack pair in sync so the rule reads the same from both cards */
+      others.forEach(function (o) {
+        var mine = c.stackableWith.indexOf(o.id) >= 0;
+        var theirs = o.stackableWith.indexOf(c.id) >= 0;
+        if (mine && !theirs) o.stackableWith.push(c.id);
+        if (!mine && theirs) o.stackableWith = o.stackableWith.filter(function (x) { return x !== c.id; });
+      });
+      c.includeCategories.concat(c.excludeCategories).forEach(rememberCategory);
+      if (existing) {
+        var i = state.coupons.indexOf(existing);
+        state.coupons[i] = newCoupon(c);
+      } else {
+        state.coupons.push(newCoupon(c));
+      }
+      renderCoupons(); save(); markStale();
+    },
+    existing ? function remove() {
+      state.coupons = state.coupons.filter(function (x) { return x.id !== existing.id; });
+      state.coupons.forEach(function (o) {
+        o.stackableWith = o.stackableWith.filter(function (x) { return x !== existing.id; });
+      });
+      renderCoupons(); save(); markStale();
+    } : null
+  );
+  var syncPayoff = function () {
+    var p = $("#cPayoff").value;
+    $("#cValueRow").hidden = (p === "freeShipping");
+    $("#cMaxWrap").hidden = (p !== "percent");
+    $("#cValueLbl").textContent =
+      p === "percent" ? "Percent (e.g. 20)" :
+      p === "fixed" ? "Amount off" :
+      "How many units free";
+  };
+  $("#cPayoff").addEventListener("change", syncPayoff);
+  syncPayoff();
+}
+
+function splitList(s) {
+  return String(s || "").split(",").map(function (x) { return x.trim(); }).filter(Boolean);
+}
+function opt(v, label, cur) {
+  return '<option value="' + v + '"' + (cur === v ? " selected" : "") + ">" + label + "</option>";
+}
+function chk(id, label, on) {
+  return '<label class="chk' + (on ? " on" : "") + '"><input type="checkbox" id="' + id + '"' + (on ? " checked" : "") + ">" + label + "</label>";
+}
+
+/* --------------------------------------------------------- card offers -- */
+function offerById(id) {
+  for (var i = 0; i < state.offers.length; i++) if (state.offers[i].id === id) return state.offers[i];
+  return null;
+}
+function renderOffers() {
+  var host = $("#offerList");
+  host.innerHTML = state.offers.length ? "" :
+    '<p class="empty">No card offers. Add one if your card pays cashback above a spend threshold.</p>';
+  state.offers.forEach(function (o) {
+    var d = document.createElement("div");
+    d.className = "rowcard";
+    d.dataset.id = o.id;
+    d.innerHTML =
+      '<div class="rc-head">' +
+        '<label class="chk' + (o.enabled !== false ? " on" : "") + '"><input type="checkbox" data-act="toggle"' +
+          (o.enabled !== false ? " checked" : "") + '></label>' +
+        '<div class="rc-title">' +
+          '<div class="t1' + (o.enabled !== false ? "" : " off") + '">' + esc(o.label || "(unnamed offer)") + "</div>" +
+          '<div class="t2">' + fmt(toC(o.cashback)) + " back on " + fmt(toC(o.minSpend)) + "+</div>" +
+        "</div>" +
+        '<button class="btn sm" data-act="edit">Edit</button>' +
+      "</div>" +
+      '<div><span class="tag">' + (o.perTransaction ? "per order" : "measured on the whole split") + "</span>" +
+      '<span class="tag">max ' + (parseInt(o.maxUses, 10) || 1) + " use" + ((parseInt(o.maxUses, 10) || 1) > 1 ? "s" : "") + "</span></div>";
+    host.appendChild(d);
+  });
+  $("#offersPill").textContent = state.offers.filter(function (o) { return o.enabled !== false; }).length +
+    " active / " + state.offers.length;
+}
+$("#offerList").addEventListener("click", function (e) {
+  var b = e.target.closest("[data-act]"); if (!b) return;
+  var o = offerById(e.target.closest(".rowcard").dataset.id); if (!o) return;
+  if (b.dataset.act === "edit") editOffer(o);
+});
+$("#offerList").addEventListener("change", function (e) {
+  if (e.target.dataset.act !== "toggle") return;
+  var o = offerById(e.target.closest(".rowcard").dataset.id); if (!o) return;
+  o.enabled = e.target.checked;
+  renderOffers(); save(); markStale();
+});
+$("#addOfferBtn").addEventListener("click", function () { editOffer(null); });
+
+function editOffer(existing) {
+  var o = existing ? JSON.parse(JSON.stringify(existing)) : newOffer();
+  openSheet(
+    existing ? "Edit card offer" : "New card offer",
+    '<label class="f"><span>Label</span><input id="oLabel" value="' + esc(o.label) + '" autocomplete="off" placeholder="Visa $10 back on $50"></label>' +
+    '<div class="grid2">' +
+      '<label class="f"><span>Min spend</span><input id="oMin" type="text" inputmode="decimal" value="' + esc(o.minSpend) + '"></label>' +
+      '<label class="f"><span>Cashback amount</span><input id="oCash" type="text" inputmode="decimal" value="' + esc(o.cashback) + '"></label>' +
+    "</div>" +
+    '<label class="f"><span>Threshold applies to</span><select id="oPer">' +
+      opt("yes", "Each order separately", o.perTransaction ? "yes" : "no") +
+      opt("no", "The whole split combined", o.perTransaction ? "yes" : "no") +
+    "</select></label>" +
+    '<label class="f"><span>Max uses</span><input id="oUses" type="number" inputmode="numeric" min="1" step="1" value="' + esc(parseInt(o.maxUses, 10) || 1) + '"></label>' +
+    '<p class="note">Most card offers are once per account, so max uses defaults to 1. Min spend is compared against the full amount charged for an order, shipping included.</p>',
+    function commit() {
+      o.label = $("#oLabel").value.trim();
+      o.minSpend = $("#oMin").value.trim() || 0;
+      o.cashback = $("#oCash").value.trim() || 0;
+      o.perTransaction = $("#oPer").value === "yes";
+      o.maxUses = Math.max(1, parseInt($("#oUses").value, 10) || 1);
+      if (existing) state.offers[state.offers.indexOf(existing)] = newOffer(o);
+      else state.offers.push(newOffer(o));
+      renderOffers(); save(); markStale();
+    },
+    existing ? function remove() {
+      state.offers = state.offers.filter(function (x) { return x.id !== existing.id; });
+      renderOffers(); save(); markStale();
+    } : null
+  );
+}
+
+/* -------------------------------------------------------------- sheet -- */
+var sheetCommit = null;
+function openSheet(title, bodyHtml, onCommit, onDelete) {
+  sheetCommit = onCommit;
+  $("#sheet").innerHTML =
+    "<h3>" + esc(title) + "</h3>" + bodyHtml +
+    '<div class="btnrow">' +
+      '<button class="btn primary" id="sheetSave">Save</button>' +
+      '<button class="btn ghost" id="sheetCancel">Cancel</button>' +
+      (onDelete ? '<button class="btn ghost danger" id="sheetDelete">Delete</button>' : "") +
+    "</div>";
+  $("#overlay").hidden = false;
+  document.body.style.overflow = "hidden";
+  $("#sheetSave").addEventListener("click", function () { if (sheetCommit) sheetCommit(); closeSheet(); });
+  $("#sheetCancel").addEventListener("click", closeSheet);
+  if (onDelete) $("#sheetDelete").addEventListener("click", function () {
+    if (confirm("Delete this?")) { onDelete(); closeSheet(); }
+  });
+  $("#sheet").addEventListener("change", function (e) {
+    if (e.target.type === "checkbox" && e.target.closest(".chk"))
+      e.target.closest(".chk").classList.toggle("on", e.target.checked);
+  });
+}
+function closeSheet() {
+  $("#overlay").hidden = true;
+  document.body.style.overflow = "";
+  sheetCommit = null;
+}
+$("#overlay").addEventListener("click", function (e) { if (e.target === $("#overlay")) closeSheet(); });
+
+/* ----------------------------------------------------------- settings -- */
+function renderSettings() {
+  $("#setFreeThresh").value = state.shipping.freeThreshold;
+  $("#setFlatFee").value = state.shipping.flatFee;
+  $("#setMeasure").value = state.shipping.measure;
+  $("#setMaxOrders").value = String(state.settings.maxOrders);
+  $("#setCurrency").value = state.settings.currency;
+}
+["setFreeThresh", "setFlatFee", "setMeasure", "setMaxOrders", "setCurrency"].forEach(function (id) {
+  $("#" + id).addEventListener("input", function () {
+    state.shipping.freeThreshold = $("#setFreeThresh").value;
+    state.shipping.flatFee = $("#setFlatFee").value;
+    state.shipping.measure = $("#setMeasure").value;
+    state.settings.maxOrders = Math.min(5, Math.max(1, parseInt($("#setMaxOrders").value, 10) || 3));
+    state.settings.currency = $("#setCurrency").value || "$";
+    save(); markStale(); renderItems();
+  });
+});
+
+/* ------------------------------------------------------ export / import -- */
+function jsonBlob() { return JSON.stringify(snapshot(), null, 2); }
+$("#exportBtn").addEventListener("click", function () {
+  var a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([jsonBlob()], { type: "application/json" }));
+  a.download = "cart-split-" + today() + ".json";
+  document.body.appendChild(a); a.click();
+  setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+});
+$("#copyJsonBtn").addEventListener("click", function (e) { copyText(jsonBlob(), e.target); });
+$("#importBtn").addEventListener("click", function () {
+  openSheet("Import JSON", '<p class="note">Paste a previously exported file. This replaces everything.</p>' +
+    '<textarea id="impBox" placeholder="{ ... }"></textarea>', function () {
+      try {
+        adopt(JSON.parse($("#impBox").value));
+        renderAll(); save(); markStale();
+        banner("good", "Imported " + state.items.length + " items and " + state.coupons.length + " coupons.");
+      } catch (err) {
+        banner("bad", "Import failed: " + err.message);
+      }
+    });
+});
+$("#resetBtn").addEventListener("click", function () {
+  if (!confirm("Erase every item, coupon, card offer and setting on this device?")) return;
+  try { localStorage.removeItem(STORE_KEY); } catch (e) {}
+  state.items = []; state.coupons = []; state.offers = []; state.done = {}; state.categories = [];
+  state.shipping = { freeThreshold: 29, flatFee: 3.99, perOrder: true, measure: "after" };
+  state.settings = { maxOrders: 3, currency: "$" };
+  renderAll(); save(); markStale();
+});
+
+function copyText(text, btn) {
+  var done = function () {
+    if (!btn) return;
+    var old = btn.textContent; btn.textContent = "Copied";
+    setTimeout(function () { btn.textContent = old; }, 1200);
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(done, function () { legacyCopy(text, done); });
+  } else legacyCopy(text, done);
+}
+function legacyCopy(text, done) {
+  var ta = document.createElement("textarea");
+  ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+  document.body.appendChild(ta); ta.focus(); ta.select();
+  try { document.execCommand("copy"); done(); } catch (e) { prompt("Copy this:", text); }
+  ta.remove();
+}
+
+var transientBanners = [];
+function banner(kind, msg) {
+  transientBanners.push({ kind: kind, msg: msg });
+  renderWarnings(lastWarnings);
+  setTimeout(function () {
+    transientBanners = transientBanners.filter(function (b) { return b.msg !== msg; });
+    renderWarnings(lastWarnings);
+  }, 5000);
+}
+
+/* ==========================================================================
+   OPTIMIZER
+   Objective: minimise  sum over orders of (subtotal - discounts + shipping)
+              minus card-offer cashback.
+   All arithmetic is in integer cents.
+   ========================================================================== */
+
+function isEligible(c, it) {
+  if (!c.appliesToDiscountedItems && (it.flags.flashSale || it.flags.clearance)) return false;
+  var cat = lc(it.category);
+  if (c.incLC.length && c.incLC.indexOf(cat) < 0) return false;
+  if (c.excLC.length && c.excLC.indexOf(cat) >= 0) return false;
+  return true;
+}
+
+function buildCtx() {
+  var items = state.items.filter(function (it) { return Math.round(Number(it.qty) || 0) > 0; });
+  var N = items.length;
+  var val = new Float64Array(N), qty = new Int32Array(N), unit = new Float64Array(N);
+  items.forEach(function (it, i) {
+    unit[i] = toC(it.price);
+    qty[i] = Math.max(0, Math.round(Number(it.qty) || 0));
+    val[i] = unit[i] * qty[i];
+  });
+
+  var coupons = state.coupons.filter(couponActive).slice(0, 30).map(function (c) {
+    var d = Object.create(c);
+    d.incLC = c.includeCategories.map(lc);
+    d.excLC = c.excludeCategories.map(lc);
+    d.minSpendC = toC(c.minSpend);
+    d.minItemsN = Math.max(0, Math.round(Number(c.minItems) || 0));
+    d.valC = toC(c.value);
+    d.pct = Number(c.value) || 0;
+    d.capC = (c.maxDiscount === null || c.maxDiscount === "") ? null : toC(c.maxDiscount);
+    d.units = Math.max(1, Math.round(Number(c.value) || 1));
+    return d;
+  });
+  var C = coupons.length;
+  var elig = coupons.map(function (c) {
+    var u = new Uint8Array(N);
+    for (var i = 0; i < N; i++) u[i] = isEligible(c, items[i]) ? 1 : 0;
+    return u;
+  });
+
+  /* Valid coupon sets for a single order: nothing, one coupon, or a stackable pair. */
+  var sets = [[]], setMask = [0], setHasCF = [false];
+  for (var a = 0; a < C; a++) {
+    sets.push([a]);
+    setMask.push(coupons[a].singleUse ? (1 << a) : 0);
+    setHasCF.push(coupons[a].payoff === "cheapestFree");
+  }
+  for (a = 0; a < C; a++) for (var b = a + 1; b < C; b++) {
+    if (!stacks(coupons[a], coupons[b])) continue;
+    sets.push([a, b]);
+    setMask.push((coupons[a].singleUse ? (1 << a) : 0) | (coupons[b].singleUse ? (1 << b) : 0));
+    setHasCF.push(coupons[a].payoff === "cheapestFree" || coupons[b].payoff === "cheapestFree");
+  }
+
+  var offers = state.offers.filter(function (o) { return o.enabled !== false; }).map(function (o) {
+    return {
+      ref: o, label: o.label, minC: toC(o.minSpend), cbC: toC(o.cashback),
+      perTransaction: !!o.perTransaction, maxUses: Math.max(1, parseInt(o.maxUses, 10) || 1)
+    };
+  }).filter(function (o) { return o.cbC > 0; });
+
+  var total = 0; for (var i = 0; i < N; i++) total += val[i];
+
+  return {
+    items: items, N: N, val: val, qty: qty, unit: unit,
+    coupons: coupons, C: C, elig: elig,
+    sets: sets, setMask: setMask, setHasCF: setHasCF,
+    offers: offers,
+    perOffers: offers.filter(function (o) { return o.perTransaction; }),
+    globOffers: offers.filter(function (o) { return !o.perTransaction; }),
+    ftC: toC(state.shipping.freeThreshold),
+    feeC: toC(state.shipping.flatFee),
+    afterDisc: state.shipping.measure !== "before",
+    totalC: total,
+    hasCheapestFree: coupons.some(function (c) { return c.payoff === "cheapestFree"; })
+  };
+}
+
+function stacks(a, b) {
+  return a.stackableWith.indexOf(b.id) >= 0 || b.stackableWith.indexOf(a.id) >= 0;
+}
+
+/* --------------------------------------------------------- card offers -- */
+function assignOffers(ctx, totals, K) {
+  var grand = 0, j;
+  for (j = 0; j < K; j++) grand += totals[j];
+
+  var cash = 0, globals = [];
+  for (var g = 0; g < ctx.globOffers.length; g++) {
+    var go = ctx.globOffers[g];
+    if (grand >= go.minC) { cash += go.cbC; globals.push(go); }
+  }
+
+  var byOrder = new Array(K); for (j = 0; j < K; j++) byOrder[j] = -1;
+  var per = ctx.perOffers;
+  if (per.length) {
+    var live = []; for (j = 0; j < K; j++) if (totals[j] > 0) live.push(j);
+    var combos = Math.pow(per.length + 1, live.length);
+    if (combos <= 400) {
+      var uses = new Int32Array(per.length);
+      var pick = new Array(live.length);
+      var bestCash = -1, bestPick = null;
+      (function dfs(k, acc) {
+        if (k === live.length) { if (acc > bestCash) { bestCash = acc; bestPick = pick.slice(); } return; }
+        pick[k] = -1; dfs(k + 1, acc);
+        for (var o = 0; o < per.length; o++) {
+          if (uses[o] >= per[o].maxUses) continue;
+          if (totals[live[k]] < per[o].minC) continue;
+          uses[o]++; pick[k] = o; dfs(k + 1, acc + per[o].cbC); uses[o]--;
+        }
+        pick[k] = -1;
+      })(0, 0);
+      if (bestPick) { for (var k = 0; k < live.length; k++) byOrder[live[k]] = bestPick[k]; cash += Math.max(0, bestCash); }
+    } else {
+      var order = per.map(function (o, i) { return i; }).sort(function (x, y) { return per[y].cbC - per[x].cbC; });
+      var jorder = live.slice().sort(function (x, y) { return totals[y] - totals[x]; });
+      var used = new Int32Array(per.length);
+      order.forEach(function (oi) {
+        jorder.forEach(function (jj) {
+          if (byOrder[jj] >= 0) return;
+          if (used[oi] >= per[oi].maxUses) return;
+          if (totals[jj] < per[oi].minC) return;
+          byOrder[jj] = oi; used[oi]++; cash += per[oi].cbC;
+        });
+      });
+    }
+  }
+  return { cash: cash, byOrder: byOrder, globals: globals, grand: grand };
+}
+
+/* ---------------------------------------------------------- evaluator -- */
+function makeEvaluator(ctx, K, setsOverride) {
+  var sets = setsOverride || ctx.sets;
+  var setMask = setsOverride ? setsOverride.map(function (s) {
+    var m = 0; s.forEach(function (ci) { if (ctx.coupons[ci].singleUse) m |= (1 << ci); }); return m;
+  }) : ctx.setMask;
+  var N = ctx.N, C = ctx.C, val = ctx.val, qty = ctx.qty, unit = ctx.unit, elig = ctx.elig, cps = ctx.coupons;
+  var S = sets.length;
+
+  var sub = new Float64Array(K);
+  var eSub = new Float64Array(K * Math.max(1, C));
+  var eCnt = new Int32Array(K * Math.max(1, C));
+  var cfVal = new Float64Array(K * Math.max(1, C));
+  var cfDone = new Uint8Array(K * Math.max(1, C));
+  var totals = new Float64Array(K);
+  var candS = [], candC = [];
+  for (var j0 = 0; j0 < K; j0++) { candS.push([]); candC.push([]); }
+  var pick = new Int32Array(K);
+  var bestPick = new Int32Array(K);
+  var suffix = new Float64Array(K + 1);
+  var curA = null;
+
+  function cheapestFreeSum(j, ci, n) {
+    var rows = [];
+    for (var i = 0; i < N; i++) if (curA[i] === j && elig[ci][i]) rows.push(i);
+    rows.sort(function (x, y) { return unit[x] - unit[y]; });
+    var s = 0, left = n;
+    for (var k = 0; k < rows.length && left > 0; k++) {
+      var take = Math.min(left, qty[rows[k]]);
+      s += take * unit[rows[k]];
+      left -= take;
+    }
+    return s;
+  }
+
+  function orderCost(j, si) {
+    var s = sets[si], subj = sub[j], disc = 0, freeShip = false;
+    for (var k = 0; k < s.length; k++) {
+      var ci = s[k], c = cps[ci], es = eSub[j * C + ci];
+      if (c.payoff === "fixed") disc += Math.min(c.valC, es);
+      else if (c.payoff === "percent") {
+        var d = Math.round(es * c.pct / 100);
+        if (c.capC !== null) d = Math.min(d, c.capC);
+        disc += d;
+      } else if (c.payoff === "cheapestFree") {
+        var key = j * C + ci;
+        if (!cfDone[key]) { cfVal[key] = cheapestFreeSum(j, ci, c.units); cfDone[key] = 1; }
+        disc += cfVal[key];
+      } else freeShip = true;
+    }
+    if (disc > subj) disc = subj;
+    var measured = ctx.afterDisc ? subj - disc : subj;
+    var ship = (subj > 0 && !freeShip && ctx.feeC > 0 && measured < ctx.ftC) ? ctx.feeC : 0;
+    return { disc: disc, ship: ship, total: subj - disc + ship, freeShip: freeShip };
+  }
+
+  function gateOk(j, si) {
+    var s = sets[si];
+    for (var k = 0; k < s.length; k++) {
+      var ci = s[k], c = cps[ci];
+      if (c.minSpendC > 0 && eSub[j * C + ci] < c.minSpendC) return false;
+      if (c.minItemsN > 0 && eCnt[j * C + ci] < c.minItemsN) return false;
+      if (c.payoff === "cheapestFree" && eCnt[j * C + ci] < c.units) return false;
+    }
+    return true;
+  }
+
+  function prep(a) {
+    curA = a;
+    sub.fill(0); eSub.fill(0); eCnt.fill(0); cfDone.fill(0);
+    for (var i = 0; i < N; i++) {
+      var j = a[i];
+      sub[j] += val[i];
+      for (var ci = 0; ci < C; ci++) {
+        if (!elig[ci][i]) continue;
+        eSub[j * C + ci] += val[i];
+        eCnt[j * C + ci] += qty[i];
+      }
+    }
+    for (var jj = 0; jj < K; jj++) {
+      var cs = candS[jj], cc = candC[jj];
+      cs.length = 0; cc.length = 0;
+      for (var si = 0; si < S; si++) {
+        if (si > 0 && !gateOk(jj, si)) continue;
+        var r = orderCost(jj, si);
+        cs.push(si); cc.push(r.total);
+      }
+      /* sort ascending by resulting order total, keep the cheapest handful */
+      var idx = cs.map(function (_, n) { return n; });
+      idx.sort(function (x, y) { return cc[x] - cc[y]; });
+      var ns = [], nc = [];
+      for (var t = 0; t < idx.length && t < MAX_SETS_PER_ORDER; t++) { ns.push(cs[idx[t]]); nc.push(cc[idx[t]]); }
+      if (ns.indexOf(0) < 0) {
+        ns.push(0); nc.push(orderCost(jj, 0).total);
+        var re = ns.map(function (_, n) { return n; });
+        re.sort(function (x, y) { return nc[x] - nc[y]; });
+        ns = re.map(function (n) { return ns[n]; });
+        nc = re.map(function (n) { return nc[n]; });
+      }
+      candS[jj] = ns; candC[jj] = nc;
+    }
+  }
+
+  function chooseMinSum() {
+    /* fast path: independent bests, valid when no single-use coupon repeats */
+    var mask = 0, clash = false, j;
+    for (j = 0; j < K; j++) {
+      var si = candS[j][0];
+      if (setMask[si] & mask) { clash = true; break; }
+      mask |= setMask[si];
+      pick[j] = si;
+    }
+    if (!clash) { for (j = 0; j < K; j++) bestPick[j] = pick[j]; return; }
+
+    suffix[K] = 0;
+    for (j = K - 1; j >= 0; j--) suffix[j] = suffix[j + 1] + candC[j][0];
+    var best = Infinity;
+    (function dfs(j, acc, used) {
+      if (acc + suffix[j] >= best) return;
+      if (j === K) { best = acc; for (var q = 0; q < K; q++) bestPick[q] = pick[q]; return; }
+      var cs = candS[j], cc = candC[j];
+      for (var t = 0; t < cs.length; t++) {
+        if (acc + cc[t] + suffix[j + 1] >= best) break;
+        if (setMask[cs[t]] & used) continue;
+        pick[j] = cs[t];
+        dfs(j + 1, acc + cc[t], used | setMask[cs[t]]);
+      }
+    })(0, 0, 0);
+    if (best === Infinity) for (j = 0; j < K; j++) bestPick[j] = 0;
+  }
+
+  function netOf(picks) {
+    for (var j = 0; j < K; j++) totals[j] = orderCost(j, picks[j]).total;
+    var off = assignOffers(ctx, totals, K);
+    var sum = 0; for (j = 0; j < K; j++) sum += totals[j];
+    return { net: sum - off.cash, cost: sum, cash: off.cash, off: off };
+  }
+
+  /* When card offers exist, a slightly smaller discount can unlock more cashback,
+     so probe a bounded product of each order's best few coupon sets. */
+  var PROBE = K <= 2 ? 6 : (K === 3 ? 4 : (K === 4 ? 3 : 2));
+
+  function evaluate(a) {
+    prep(a);
+    chooseMinSum();
+    var res = netOf(bestPick);
+    var winner = Array.prototype.slice.call(bestPick, 0, K);
+
+    if (ctx.offers.length) {
+      var combos = 1;
+      for (var j = 0; j < K; j++) combos *= Math.min(PROBE, candS[j].length);
+      if (combos <= 96) {
+        var cur = new Int32Array(K);
+        (function dfs(j, used) {
+          if (j === K) {
+            var r = netOf(cur);
+            if (r.net < res.net - 0.5) { res = r; winner = Array.prototype.slice.call(cur, 0, K); }
+            return;
+          }
+          var lim = Math.min(PROBE, candS[j].length);
+          for (var t = 0; t < lim; t++) {
+            var si = candS[j][t];
+            if (setMask[si] & used) continue;
+            cur[j] = si;
+            dfs(j + 1, used | setMask[si]);
+          }
+        })(0, 0);
+      }
+    }
+    res.picks = winner;
+    return res;
+  }
+
+  evaluate.detail = function (a) {
+    var r = evaluate(a);
+    prep(a);                                  /* prep again: netOf mutated cfDone lazily but state is consistent */
+    var orders = [];
+    for (var j = 0; j < K; j++) {
+      var si = r.picks[j], s = sets[si], oc = orderCost(j, si);
+      var list = [];
+      for (var i = 0; i < N; i++) if (a[i] === j) list.push({ item: ctx.items[i], i: i, valueC: val[i] });
+      list.sort(function (x, y) { return y.valueC - x.valueC; });
+      var breakdown = s.map(function (ci) {
+        var c = cps[ci], es = eSub[j * C + ci], d = 0;
+        if (c.payoff === "fixed") d = Math.min(c.valC, es);
+        else if (c.payoff === "percent") { d = Math.round(es * c.pct / 100); if (c.capC !== null) d = Math.min(d, c.capC); }
+        else if (c.payoff === "cheapestFree") d = cheapestFreeSum(j, ci, c.units);
+        return { coupon: c, discC: d, eligC: es };
+      });
+      orders.push({
+        j: j, items: list, subC: sub[j], discC: oc.disc, shipC: oc.ship, totalC: oc.total,
+        coupons: s.map(function (ci) { return cps[ci]; }), breakdown: breakdown,
+        freeShip: oc.freeShip, offer: null
+      });
+      totals[j] = oc.total;
+    }
+    var off = assignOffers(ctx, totals, K);
+    for (var q = 0; q < K; q++) if (off.byOrder[q] >= 0) orders[q].offer = ctx.perOffers[off.byOrder[q]];
+    var used = orders.filter(function (o) { return o.items.length > 0; });
+    var grand = 0; used.forEach(function (o) { grand += o.totalC; });
+    return {
+      orders: used, grandC: grand, cashC: off.cash, netC: grand - off.cash,
+      globals: off.globals, assign: Array.prototype.slice.call(a, 0, N)
+    };
+  };
+
+  evaluate.K = K;
+  return evaluate;
+}
+
+/* --------------------------------------------------------- local search -- */
+function greedyFill(ctx, K, byVal, targets) {
+  var a = new Int32Array(ctx.N), sums = new Float64Array(K);
+  for (var n = 0; n < byVal.length; n++) {
+    var i = byVal[n], bestJ = 0, bestGap = -Infinity, j;
+    for (j = 0; j < K; j++) { var gap = targets[j] - sums[j]; if (gap > bestGap) { bestGap = gap; bestJ = j; } }
+    if (bestGap <= 0) { bestJ = 0; for (j = 1; j < K; j++) if (sums[j] < sums[bestJ]) bestJ = j; }
+    a[i] = bestJ; sums[bestJ] += ctx.val[i];
+  }
+  return a;
+}
+
+function buildSeeds(ctx, K) {
+  var N = ctx.N, seeds = [], j;
+  seeds.push(new Int32Array(N));                                   /* everything in one order */
+
+  var thr = [];
+  ctx.coupons.forEach(function (c) { if (c.minSpendC > 0) thr.push(c.minSpendC); });
+  if (ctx.ftC > 0 && ctx.feeC > 0) thr.push(ctx.ftC);
+  thr = thr.filter(function (v, i, arr) { return arr.indexOf(v) === i; }).sort(function (a, b) { return b - a; });
+
+  var byVal = []; for (var i = 0; i < N; i++) byVal.push(i);
+  byVal.sort(function (x, y) { return ctx.val[y] - ctx.val[x]; });
+
+  thr.slice(0, 4).forEach(function (T) {
+    var t = []; for (j = 0; j < K; j++) t.push(T);
+    seeds.push(greedyFill(ctx, K, byVal, t));
+  });
+  if (thr.length >= 2) {
+    var mixed = []; for (j = 0; j < K; j++) mixed.push(thr[Math.min(j, thr.length - 1)]);
+    seeds.push(greedyFill(ctx, K, byVal, mixed));
+  }
+  var snake = new Int32Array(N);
+  for (var k = 0; k < N; k++) {
+    var row = Math.floor(k / K), pos = k % K;
+    snake[byVal[k]] = (row % 2 === 0) ? pos : (K - 1 - pos);
+  }
+  seeds.push(snake);
+  return seeds;
+}
+
+function localSearch(ctx, K, evalFn, deadline, extraSeeds) {
+  var N = ctx.N;
+  var seeds = (extraSeeds || []).concat(buildSeeds(ctx, K));
+  var best = Infinity, bestA = null, evals = 0, restarts = 0, si = 0, i, j, t;
+  var sinceGain = 0, t0 = now();
+
+  while (now() < deadline) {
+    var a;
+    if (si < seeds.length) a = Int32Array.from(seeds[si++]);
+    else { a = new Int32Array(N); for (i = 0; i < N; i++) a[i] = (Math.random() * K) | 0; }
+    restarts++;
+    var cur = evalFn(a).net; evals++;
+    var improved = true, guard = 0;
+
+    while (improved && guard++ < 60) {
+      improved = false;
+      var order = []; for (i = 0; i < N; i++) order.push(i);
+      for (i = N - 1; i > 0; i--) { var r = (Math.random() * (i + 1)) | 0; t = order[i]; order[i] = order[r]; order[r] = t; }
+
+      for (var oi = 0; oi < N; oi++) {
+        var it = order[oi], from = a[it];
+        for (j = 0; j < K; j++) {
+          if (j === from) continue;
+          a[it] = j;
+          var v = evalFn(a).net; evals++;
+          if (v < cur - 0.5) { cur = v; from = j; improved = true; } else a[it] = from;
+        }
+        if ((oi & 7) === 0 && now() > deadline) break;
+      }
+      if (now() > deadline) break;
+
+      var tries = Math.min(N * 4, 140);
+      for (t = 0; t < tries; t++) {
+        var x = (Math.random() * N) | 0, y = (Math.random() * N) | 0;
+        if (x === y || a[x] === a[y]) continue;
+        var sw = a[x]; a[x] = a[y]; a[y] = sw;
+        var v2 = evalFn(a).net; evals++;
+        if (v2 < cur - 0.5) { cur = v2; improved = true; }
+        else { sw = a[x]; a[x] = a[y]; a[y] = sw; }
+        if ((t & 15) === 0 && now() > deadline) break;
+      }
+      if (now() > deadline) break;
+    }
+    if (bestA === null || cur < best - 0.5) { best = cur; bestA = Int32Array.from(a); sinceGain = 0; }
+    else if (++sinceGain > 200 && now() - t0 > 400 && si >= seeds.length) break;
+  }
+  if (bestA === null) { bestA = new Int32Array(N); best = evalFn(bestA).net; evals++; restarts++; }
+  return { best: best, bestA: bestA, evals: evals, restarts: restarts };
+}
+
+/* ---------------------------------------------------------------- MILP -- */
+function enumerateLayouts(ctx, K) {
+  var S = ctx.sets.length, out = [], cur = new Array(K), stop = false;
+  (function rec(pos, start, mask) {
+    if (stop) return;
+    if (pos === K) { out.push(cur.slice()); if (out.length > MILP_MAX_LAYOUTS) stop = true; return; }
+    for (var si = start; si < S; si++) {
+      if (ctx.setMask[si] & mask) continue;
+      cur[pos] = si;
+      rec(pos + 1, si, mask | ctx.setMask[si]);
+      if (stop) return;
+    }
+  })(0, 0, 0);
+  return out;
+}
+
+function buildModel(ctx, K, layout) {
+  var N = ctx.N, val = ctx.val, qty = ctx.qty, elig = ctx.elig, cps = ctx.coupons;
+  var m = { optimize: "net", opType: "min", constraints: {}, variables: {}, ints: {} };
+  var bigM = ctx.totalC + ctx.feeC + 10000;
+  function V(n, cost) { if (!m.variables[n]) m.variables[n] = { net: cost || 0 }; return n; }
+  function A(n, con, v) { var o = m.variables[n]; o[con] = (o[con] || 0) + v; }
+  function CN(n, spec) { m.constraints[n] = spec; return n; }
+  function BIN(n) { m.ints[n] = 1; CN("ub_" + n, { max: 1 }); A(n, "ub_" + n, 1); }
+  var i, j, k, o, ci;
+
+  for (i = 0; i < N; i++) CN("asg" + i, { equal: 1 });
+
+  for (j = 0; j < K; j++) {
+    CN("use" + j, { max: 0 }); CN("sle" + j, { max: 0 });
+    CN("sh" + j, { min: 0 }); CN("tot" + j, { max: 0 });
+    V("e" + j, 0); BIN("e" + j);
+    A("e" + j, "use" + j, -N); A("e" + j, "sle" + j, -1); A("e" + j, "sh" + j, -ctx.ftC);
+    V("s" + j, ctx.feeC); BIN("s" + j);
+    A("s" + j, "sle" + j, 1); A("s" + j, "sh" + j, ctx.ftC);
+    for (i = 0; i < N; i++) {
+      var x = "x" + i + "_" + j;
+      V(x, val[i]); BIN(x);
+      A(x, "asg" + i, 1); A(x, "use" + j, 1); A(x, "sh" + j, val[i]); A(x, "tot" + j, -val[i]);
+    }
+  }
+
+  for (j = 0; j < K; j++) {
+    var s = ctx.sets[layout[j]];
+    for (k = 0; k < s.length; k++) {
+      ci = s[k];
+      var c = cps[ci], y = "y" + j + "_" + ci;
+      V(y, 0); BIN(y);
+      if (c.minSpendC > 0) {
+        var g = CN("gs" + j + "_" + ci, { min: 0 });
+        A(y, g, -c.minSpendC);
+        for (i = 0; i < N; i++) if (elig[ci][i]) A("x" + i + "_" + j, g, val[i]);
+      }
+      if (c.minItemsN > 0) {
+        var g2 = CN("gi" + j + "_" + ci, { min: 0 });
+        A(y, g2, -c.minItemsN);
+        for (i = 0; i < N; i++) if (elig[ci][i]) A("x" + i + "_" + j, g2, qty[i]);
+      }
+      if (c.payoff === "freeShipping") {
+        var fs = CN("fs" + j + "_" + ci, { max: 1 });
+        A("s" + j, fs, 1); A(y, fs, 1);
+        A(y, "sh" + j, ctx.ftC);
+      } else {
+        var d = "d" + j + "_" + ci;
+        V(d, -1);
+        A(d, "tot" + j, 1);
+        if (ctx.afterDisc) A(d, "sh" + j, -1);
+        if (c.payoff === "fixed") {
+          var df = CN("df" + j + "_" + ci, { max: 0 }); A(d, df, 1); A(y, df, -c.valC);
+          var dc = CN("dc" + j + "_" + ci, { max: 0 }); A(d, dc, 1);
+          for (i = 0; i < N; i++) if (elig[ci][i]) A("x" + i + "_" + j, dc, -val[i]);
+        } else {
+          /* the exact evaluator rounds a percent discount to the nearest cent, so allow
+             the LP the same half-cent of slack or the rounded value is infeasible here */
+          var dp = CN("dp" + j + "_" + ci, { max: 0.5 }); A(d, dp, 1);
+          for (i = 0; i < N; i++) if (elig[ci][i]) A("x" + i + "_" + j, dp, -(c.pct / 100) * val[i]);
+          var dm = CN("dm" + j + "_" + ci, { max: 0 }); A(d, dm, 1);
+          A(y, dm, -(c.capC !== null ? c.capC : bigM));
+        }
+      }
+    }
+  }
+
+  function addOrderTotal(con, j) {
+    A("s" + j, con, ctx.feeC);
+    for (var ii = 0; ii < N; ii++) A("x" + ii + "_" + j, con, val[ii]);
+    var ss = ctx.sets[layout[j]];
+    for (var kk = 0; kk < ss.length; kk++) {
+      if (cps[ss[kk]].payoff !== "freeShipping") A("d" + j + "_" + ss[kk], con, -1);
+    }
+  }
+
+  var per = ctx.perOffers, glob = ctx.globOffers;
+  if (per.length) {
+    for (j = 0; j < K; j++) {
+      var zone = CN("zone" + j, { max: 0 });
+      A("e" + j, zone, -1);
+      for (o = 0; o < per.length; o++) {
+        var z = "z" + j + "_" + o;
+        V(z, -per[o].cbC); BIN(z); A(z, zone, 1);
+        var zq = CN("zq" + j + "_" + o, { min: 0 });
+        A(z, zq, -per[o].minC);
+        addOrderTotal(zq, j);
+      }
+    }
+    for (o = 0; o < per.length; o++) {
+      var zm = CN("zmax" + o, { max: per[o].maxUses });
+      for (j = 0; j < K; j++) A("z" + j + "_" + o, zm, 1);
+    }
+  }
+  for (o = 0; o < glob.length; o++) {
+    var gv = "g" + o;
+    V(gv, -glob[o].cbC); BIN(gv);
+    var gq = CN("gq" + o, { min: 0 });
+    A(gv, gq, -glob[o].minC);
+    for (j = 0; j < K; j++) addOrderTotal(gq, j);
+  }
+  return m;
+}
+
+function milpRun(ctx, K, evalFn, layouts, deadline) {
+  var best = Infinity, bestA = null, solved = 0, complete = true;
+  for (var L = 0; L < layouts.length; L++) {
+    if (now() > deadline - 80) { complete = false; break; }
+    var res;
+    try { res = window.solver.Solve(buildModel(ctx, K, layouts[L])); }
+    catch (e) { complete = false; continue; }
+    solved++;
+    if (!res || !res.feasible) continue;
+    var a = new Int32Array(ctx.N), ok = true;
+    for (var i = 0; i < ctx.N && ok; i++) {
+      var found = -1;
+      for (var j = 0; j < K; j++) if (res["x" + i + "_" + j] > 0.5) { found = j; break; }
+      if (found < 0) ok = false; else a[i] = found;
+    }
+    if (!ok) continue;
+    var v = evalFn(a).net;
+    if (bestA === null || v < best - 0.5) { best = v; bestA = a; }
+  }
+  return { best: best, bestA: bestA, solved: solved, complete: complete, total: layouts.length };
+}
+
+/* -------------------------------------------------------------- driver -- */
+function optimize() {
+  var ctx = buildCtx();
+  if (!ctx.N) return { error: "No items with a quantity above zero." };
+
+  var K = Math.max(1, Math.min(state.settings.maxOrders, ctx.N));
+  var t0 = now();
+
+  /* Baselines: one order, full coupon rules; and one order, best single coupon. */
+  var oneA = new Int32Array(ctx.N);
+  var evalOne = makeEvaluator(ctx, 1);
+  var baseAll = evalOne.detail(oneA);
+  var singleSets = ctx.sets.filter(function (s) { return s.length <= 1; });
+  var baseSingle = makeEvaluator(ctx, 1, singleSets).detail(new Int32Array(ctx.N));
+  var baseline = baseAll.netC <= baseSingle.netC ? baseAll : baseSingle;
+  var baselineStacked = baseline === baseAll && baseAll.netC < baseSingle.netC - 0.5;
+
+  if (K === 1) {
+    return {
+      ctx: ctx, K: 1, baseline: baseline, baseSingle: baseSingle, baselineStacked: baselineStacked,
+      plan: baseline, savingsC: 0, mode: "single order (K = 1), no split considered",
+      modeShort: "single order",
+      ms: Math.round(now() - t0), evalFn: evalOne, assign: oneA
+    };
+  }
+
+  var evalFn = makeEvaluator(ctx, K);
+  var budget = TIME_BUDGET_MS;
+  var deadline = t0 + budget;
+
+  var milpEligible = !!(window.solver && !ctx.hasCheapestFree && ctx.N <= MILP_MAX_ITEMS && K <= MILP_MAX_ORDERS);
+  var layouts = null, skipReason = "";
+  if (milpEligible) {
+    layouts = enumerateLayouts(ctx, K);
+    if (layouts.length > MILP_MAX_LAYOUTS) { milpEligible = false; layouts = null; skipReason = "too many coupon layouts"; }
+  } else {
+    skipReason = !window.solver ? "solver CDN unavailable"
+      : ctx.hasCheapestFree ? "a cheapest-unit-free coupon is active (not linear)"
+      : ctx.N > MILP_MAX_ITEMS ? "more than " + MILP_MAX_ITEMS + " item lines"
+      : "more than " + MILP_MAX_ORDERS + " orders";
+  }
+
+  var lsDeadline = milpEligible ? t0 + budget * 0.45 : deadline;
+  var ls = localSearch(ctx, K, evalFn, lsDeadline);
+  var best = ls.best, bestA = ls.bestA, evals = ls.evals, restarts = ls.restarts;
+  var milp = null;
+
+  if (milpEligible) {
+    milp = milpRun(ctx, K, evalFn, layouts, deadline);
+    if (milp.bestA && milp.best < best - 0.5) { best = milp.best; bestA = milp.bestA; }
+    if (now() < deadline - 120) {
+      var ls2 = localSearch(ctx, K, evalFn, deadline, [bestA]);
+      evals += ls2.evals; restarts += ls2.restarts;
+      if (ls2.best < best - 0.5) { best = ls2.best; bestA = ls2.bestA; }
+    }
+  }
+
+  var mode, modeShort;
+  if (milp && milp.complete) {
+    modeShort = "MILP + local search";
+    mode = "MILP over all " + milp.total + " coupon layouts, plus local search (" +
+      restarts + " restarts / " + evals.toLocaleString() + " evaluations)";
+  } else if (milp) {
+    modeShort = "MILP partial + local search";
+    mode = "MILP over " + milp.solved + " of " + milp.total + " coupon layouts before the time budget ran out, plus local search (" +
+      restarts + " restarts / " + evals.toLocaleString() + " evaluations)";
+  } else {
+    modeShort = "local search";
+    mode = "local search, " + restarts + " restarts / " + evals.toLocaleString() + " evaluations"
+      + (skipReason ? "; MILP skipped because " + skipReason : "");
+  }
+
+  var plan = evalFn.detail(bestA);
+  return {
+    ctx: ctx, K: K, baseline: baseline, baseSingle: baseSingle, baselineStacked: baselineStacked,
+    plan: plan, savingsC: baseline.netC - plan.netC, mode: mode, modeShort: modeShort,
+    ms: Math.round(now() - t0), evalFn: evalFn, assign: bestA,
+    evals: evals, restarts: restarts, milp: milp
+  };
+}
+
+/* ==========================================================================
+   NEAR-MISS HINTS
+   ========================================================================== */
+function orderStats(ctx, K, a) {
+  var C = Math.max(1, ctx.C);
+  var sub = new Float64Array(K), eSub = new Float64Array(K * C), eCnt = new Int32Array(K * C);
+  for (var i = 0; i < ctx.N; i++) {
+    var j = a[i];
+    sub[j] += ctx.val[i];
+    for (var ci = 0; ci < ctx.C; ci++) {
+      if (!ctx.elig[ci][i]) continue;
+      eSub[j * ctx.C + ci] += ctx.val[i];
+      eCnt[j * ctx.C + ci] += ctx.qty[i];
+    }
+  }
+  return { sub: sub, eSub: eSub, eCnt: eCnt };
+}
+
+function nearMisses(r) {
+  var ctx = r.ctx, K = r.K, C = ctx.C, a = r.assign;
+  if (!a || K < 2) return [];
+  var st = orderStats(ctx, K, a);
+  var base = r.evalFn(a).net;
+  var num = {}; r.plan.orders.forEach(function (o, n) { num[o.j] = n + 1; });
+  var couponUsedIn = {};
+  r.plan.orders.forEach(function (o) { o.coupons.forEach(function (c) { couponUsedIn[c.id] = o.j; }); });
+  var hints = [];
+
+  function tryMove(j, want, verify, label, detailLine) {
+    /* cheapest single move from another order that closes the gap AND actually
+       changes what that order gets. A move that merely qualifies for a coupon
+       the order still would not use is noise, not a hint. */
+    var cands = [];
+    for (var i = 0; i < ctx.N; i++) {
+      if (a[i] === j) continue;
+      if (!want(i)) continue;
+      cands.push(i);
+    }
+    cands.sort(function (x, y) { return ctx.val[x] - ctx.val[y]; });
+    cands = cands.slice(0, 20);
+    var bestI = -1, bestNet = Infinity;
+    var work = Int32Array.from(a);
+    for (var k = 0; k < cands.length; k++) {
+      var i2 = cands[k], from = work[i2];
+      work[i2] = j;
+      var det = r.evalFn.detail(work);
+      work[i2] = from;
+      if (!verify(det, j)) continue;
+      if (det.netC < bestNet) { bestNet = det.netC; bestI = i2; }
+    }
+    if (bestI < 0) return null;
+    var delta = bestNet - base;
+    return {
+      delta: delta,
+      html: '<div class="hint">' + label(ctx.items[bestI], num[a[bestI]] || (a[bestI] + 1)) +
+        '<div class="d">' + detailLine(delta) + "</div></div>"
+    };
+  }
+  function findOrder(det, j) {
+    for (var n = 0; n < det.orders.length; n++) if (det.orders[n].j === j) return det.orders[n];
+    return null;
+  }
+  function usesCoupon(c) {
+    return function (det, j) {
+      var o = findOrder(det, j);
+      return !!o && o.coupons.indexOf(c) >= 0;
+    };
+  }
+  function effect(delta) {
+    if (delta < -0.5) return "Net effect: saves " + fmt(-delta) + " overall.";
+    if (delta > 0.5) return "It qualifies, but costs " + fmt(delta) + " more overall, so the plan leaves it alone.";
+    return "Net effect: about the same either way.";
+  }
+
+  r.plan.orders.forEach(function (o) {
+    var j = o.j;
+    for (var ci = 0; ci < C; ci++) {
+      var c = ctx.coupons[ci];
+      if (o.coupons.indexOf(c) >= 0) continue;
+      if (c.singleUse && couponUsedIn[c.id] !== undefined) continue;
+      var gapSpend = c.minSpendC - st.eSub[j * C + ci];
+      var gapItems = c.minItemsN - st.eCnt[j * C + ci];
+      if (gapSpend > 0 && gapSpend <= Math.max(2000, c.minSpendC * 0.3)) {
+        var h = tryMove(j,
+          function (i) { return ctx.elig[ci][i] && ctx.val[i] >= gapSpend; },
+          usesCoupon(c),
+          function (item, fromN) {
+            return "Order " + num[j] + " is <b>" + fmt(gapSpend) + " under the " + fmt(c.minSpendC) +
+              ' threshold</b> for <span class="code">' + esc(c.code || c.label) + "</span> &mdash; move &ldquo;" +
+              esc(item.name || "(unnamed)") + "&rdquo; from Order " + fromN + " to qualify.";
+          }, effect);
+        if (h) hints.push(h);
+        else if (!o.coupons.length) hints.push({
+          delta: 9e9,
+          html: '<div class="hint">Order ' + num[j] + " is <b>" + fmt(gapSpend) + " under the " + fmt(c.minSpendC) +
+            ' threshold</b> for <span class="code">' + esc(c.code || c.label) +
+            '</span>.<div class="d">No single move from another order closes that gap and leaves the coupon worth using.</div></div>'
+        });
+      } else if (gapItems > 0 && gapItems <= 2) {
+        var h2 = tryMove(j,
+          function (i) { return ctx.elig[ci][i] && ctx.qty[i] >= gapItems; },
+          usesCoupon(c),
+          function (item, fromN) {
+            return "Order " + num[j] + " needs <b>" + gapItems + " more eligible item" + (gapItems > 1 ? "s" : "") +
+              '</b> for <span class="code">' + esc(c.code || c.label) + "</span> &mdash; move &ldquo;" +
+              esc(item.name || "(unnamed)") + "&rdquo; from Order " + fromN + " to qualify.";
+          }, effect);
+        if (h2) hints.push(h2);
+      }
+    }
+    /* free-shipping threshold */
+    if (o.shipC > 0 && ctx.ftC > 0) {
+      var measured = ctx.afterDisc ? (o.subC - o.discC) : o.subC;
+      var gap = ctx.ftC - measured;
+      if (gap > 0 && gap <= Math.max(2000, ctx.ftC * 0.4)) {
+        var h3 = tryMove(j,
+          function (i) { return ctx.val[i] >= gap; },
+          function (det, jj) { var o = findOrder(det, jj); return !!o && o.shipC === 0; },
+          function (item, fromN) {
+            return "Order " + num[j] + " is <b>" + fmt(gap) + " under the " + fmt(ctx.ftC) +
+              " free-shipping threshold</b> &mdash; move &ldquo;" + esc(item.name || "(unnamed)") +
+              "&rdquo; from Order " + fromN + " to skip the " + fmt(ctx.feeC) + " fee.";
+          }, effect);
+        if (h3) hints.push(h3);
+      }
+    }
+  });
+
+  hints.sort(function (x, y) { return x.delta - y.delta; });
+  return hints.slice(0, 6);
+}
+
+/* ==========================================================================
+   WARNINGS
+   ========================================================================== */
+var lastWarnings = [];
+function computeWarnings(r) {
+  var w = [];
+  var badPrice = state.items.filter(function (it) {
+    return Math.round(Number(it.qty) || 0) > 0 && toC(it.price) <= 0;
+  });
+  if (badPrice.length) w.push({ kind: "bad", msg: "<b>" + badPrice.length + " item" + (badPrice.length > 1 ? "s have" : " has") +
+    " no usable price.</b> They are counted at " + fmt(0) + ", which will understate every order: " +
+    badPrice.slice(0, 4).map(function (i) { return esc(i.name || "(unnamed)"); }).join(", ") + (badPrice.length > 4 ? "&hellip;" : "") });
+
+  var zeroQty = state.items.filter(function (it) { return Math.round(Number(it.qty) || 0) <= 0; });
+  if (zeroQty.length) w.push({ kind: "warn", msg: zeroQty.length + " line" + (zeroQty.length > 1 ? "s are" : " is") +
+    " set to quantity 0 and was left out of the plan." });
+
+  var catScoped = state.coupons.filter(couponActive)
+    .filter(function (c) { return c.includeCategories.length || c.excludeCategories.length; });
+  if (catScoped.length) {
+    var noCat = state.items.filter(function (it) {
+      return Math.round(Number(it.qty) || 0) > 0 && !String(it.category || "").trim();
+    });
+    if (noCat.length) w.push({ kind: "warn", msg: "<b>" + noCat.length + " item" + (noCat.length > 1 ? "s have" : " has") +
+      " no category</b> while " + catScoped.length + " coupon" + (catScoped.length > 1 ? "s are" : " is") +
+      " category-scoped. Uncategorised items count as ineligible for &ldquo;only these categories&rdquo; coupons." });
+  }
+
+  var uncertain = state.coupons.filter(couponActive).filter(function (c) { return c.uncertain; });
+  if (uncertain.length) w.push({ kind: "warn", msg: "Coupon terms flagged uncertain: " +
+    uncertain.map(function (c) { return '<span class="code">' + esc(c.code || c.label) + "</span>"; }).join(", ") +
+    ". Check the real terms before you rely on this plan." });
+
+  var expired = state.coupons.filter(function (c) { return c.enabled !== false && isExpired(c); });
+  if (expired.length) w.push({ kind: "warn", msg: expired.length + " enabled coupon" + (expired.length > 1 ? "s are" : " is") +
+    " past the expiry date and was excluded: " +
+    expired.map(function (c) { return esc(c.code || c.label); }).join(", ") });
+
+  if (r && r.plan) {
+    var bundles = {}, split = [];
+    r.plan.orders.forEach(function (o) {
+      o.items.forEach(function (x) {
+        if (x.item.flags.bundle) { bundles[o.j] = 1; }
+      });
+    });
+    var bundleOrders = Object.keys(bundles);
+    if (bundleOrders.length > 1) w.push({ kind: "warn", msg: "Items marked <b>bundle</b> ended up in " +
+      bundleOrders.length + " different orders. Bundle pricing usually needs the whole bundle in one order &mdash; check before placing." });
+
+    var stacked = r.plan.orders.filter(function (o) { return o.coupons.length > 1; });
+    if (stacked.length) w.push({ kind: "warn", msg: "<b>Stacked coupons assumed independent.</b> Each stacked discount is " +
+      "computed against the pre-discount eligible subtotal and the sum is capped at the order subtotal. Real checkout may apply them in sequence for a smaller total." });
+  }
+
+  var asym = [];
+  state.coupons.forEach(function (c) {
+    c.stackableWith.forEach(function (id) {
+      var o = couponById(id);
+      if (o && o.stackableWith.indexOf(c.id) < 0) asym.push((c.code || c.label) + " / " + (o.code || o.label));
+    });
+  });
+  if (asym.length) w.push({ kind: "warn", msg: "Stacking is declared on only one side for: " + esc(asym.join(", ")) +
+    ". The optimizer treats these as stackable." });
+
+  if (state.coupons.filter(couponActive).length > 30)
+    w.push({ kind: "warn", msg: "Only the first 30 active coupons are considered." });
+
+  if (!window.solver) w.push({ kind: "warn", msg: "The <b>javascript-lp-solver</b> CDN script did not load, so the exact MILP path is off. " +
+    "Local search still runs and the plan is still valid, just not proven optimal." });
+
+  return w;
+}
+
+function renderWarnings(w) {
+  lastWarnings = w || [];
+  var all = transientBanners.concat(lastWarnings);
+  $("#warnings").innerHTML = all.map(function (x) {
+    return '<div class="banner ' + x.kind + '">' + x.msg + "</div>";
+  }).join("");
+}
+
+/* ==========================================================================
+   RESULT RENDERING
+   ========================================================================== */
+function orderKey(o) {
+  var ids = o.items.map(function (x) { return x.item.id; }).sort().join(",");
+  var cs = o.coupons.map(function (c) { return c.code || c.id; }).sort().join(",");
+  var s = ids + "|" + cs, h = 5381;
+  for (var i = 0; i < s.length; i++) h = ((h * 33) ^ s.charCodeAt(i)) >>> 0;
+  return "k" + h.toString(36);
+}
+
+function orderHtml(o, title, opts) {
+  opts = opts || {};
+  var key = orderKey(o);
+  var done = !!state.done[key];
+  var units = o.items.reduce(function (a, x) { return a + x.item.qty; }, 0);
+  var codes = o.coupons.map(function (c) { return c.code; }).filter(Boolean);
+
+  var rows = o.items.map(function (x) {
+    var fl = [];
+    if (x.item.flags.flashSale) fl.push("flash");
+    if (x.item.flags.clearance) fl.push("clearance");
+    if (x.item.flags.bundle) fl.push("bundle");
+    return "<li>" +
+      '<span class="nm">' + esc(x.item.name || "(unnamed)") +
+        (fl.length ? ' <span class="fl">' + fl.join("/") + "</span>" : "") + "</span>" +
+      '<span class="q">&times;' + x.item.qty + "</span>" +
+      '<span class="p">' + fmt(x.valueC) + "</span></li>";
+  }).join("");
+
+  var lines = '<div class="kv"><span class="k">Subtotal</span><span class="v">' + fmt(o.subC) + "</span></div>";
+  o.breakdown.forEach(function (b) {
+    lines += '<div class="kv"><span class="k">' +
+      (b.coupon.payoff === "freeShipping" ? "Free shipping " : "Coupon ") +
+      '<span class="code">' + esc(b.coupon.code || b.coupon.label || "(no code)") + "</span></span>" +
+      '<span class="v neg">' + (b.discC > 0 ? "-" + fmt(b.discC) : "&mdash;") + "</span></div>";
+    lines += '<div class="kv sub"><span class="k">&nbsp;&nbsp;eligible subtotal</span><span class="v">' + fmt(b.eligC) + "</span></div>";
+  });
+  if (!o.coupons.length) lines += '<div class="kv"><span class="k">Coupon</span><span class="v">none applies</span></div>';
+  lines += '<div class="kv"><span class="k">Shipping</span><span class="v">' +
+    (o.shipC > 0 ? fmt(o.shipC) : (o.freeShip ? "free (coupon)" : "free")) + "</span></div>";
+  lines += '<div class="kv tot"><span class="k">Order total</span><span class="v">' + fmt(o.totalC) + "</span></div>";
+  if (o.offer) lines += '<div class="kv sub"><span class="k">Qualifies for</span><span class="v">' +
+    esc(o.offer.label || "card offer") + " (" + fmt(o.offer.cbC) + " back)</span></div>";
+
+  return '<div class="order' + (opts.baseline ? " baseline" : "") + (done && !opts.baseline ? " done" : "") + '" data-key="' + key + '">' +
+    "<h3><span class='n'>" + title + "</span>" +
+      '<span class="pill">' + o.items.length + " line" + (o.items.length === 1 ? "" : "s") + " / " + units + " units</span></h3>" +
+    (rows ? '<ul class="olist">' + rows + "</ul>" : "") +
+    lines +
+    (opts.baseline ? "" :
+      '<div class="done-wrap">' +
+        "<label><input type='checkbox' data-done='" + key + "'" + (done ? " checked" : "") + "> Placed this order</label>" +
+        (codes.length ? '<button class="btn sm" data-copy="' + esc(codes.join(" ")) + '">Copy code' + (codes.length > 1 ? "s" : "") + "</button>" : "") +
+      "</div>") +
+    "</div>";
+}
+
+function renderResult(r) {
+  var host = $("#results");
+  if (r.error) {
+    host.innerHTML = '<p class="empty">' + esc(r.error) + "</p>";
+    $("#modePill").textContent = "no run";
+    renderWarnings(computeWarnings(null));
+    return;
+  }
+  $("#modePill").innerHTML = esc(r.modeShort) + " &middot; " + r.ms + "&nbsp;ms";
+  $("#modePill").className = "pill on";
+
+  var h = "";
+  var saved = r.savingsC;
+  var nOrders = r.plan.orders.length;
+
+  if (r.K === 1) {
+    h += '<div class="banner">Max orders is set to 1, so no split was considered.</div>';
+  } else if (nOrders <= 1) {
+    h += '<div class="banner good"><b>Do not split.</b> One order is already the cheapest arrangement found.</div>';
+  } else if (saved < 500) {
+    h += '<div class="banner warn"><b>Not worth splitting.</b> The best split saves only ' + fmt(saved) +
+      " against one order &mdash; under " + fmt(500) + ". Place it as a single order and skip the hassle.</div>";
+  } else {
+    h += '<div class="banner good"><b>Split into ' + nOrders + " orders and save " + fmt(saved) + "</b> against the best single order.</div>";
+  }
+
+  h += "<h3 style='margin:16px 0 4px;font-size:14px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)'>The number to beat</h3>";
+  h += orderHtml(r.baseline.orders[0] || { j: 0, items: [], subC: 0, discC: 0, shipC: 0, totalC: 0, coupons: [], breakdown: [], freeShip: false, offer: null },
+    "Baseline &mdash; everything in one order", { baseline: true });
+  h += totalsHtml(r.baseline, "Baseline net cost");
+  if (r.baselineStacked) {
+    h += '<p class="note">The baseline uses stacked coupons, which beats the best single coupon (' +
+      fmt(r.baseSingle.netC) + ") by " + fmt(r.baseSingle.netC - r.baseline.netC) + ". The larger of the two is used as the number to beat.</p>";
+  } else if (r.baseSingle.netC > r.baseline.netC) {
+    h += '<p class="note">Best single coupon on one order: ' + fmt(r.baseSingle.netC) + ".</p>";
+  }
+
+  if (r.K > 1 && nOrders > 1) {
+    h += "<h3 style='margin:20px 0 4px;font-size:14px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)'>Proposed split</h3>";
+    r.plan.orders.forEach(function (o, n) { h += orderHtml(o, "Order " + (n + 1)); });
+    h += totalsHtml(r.plan, "Net cost", saved);
+  }
+
+  var hints = nearMisses(r);
+  if (hints.length) {
+    h += "<h3 style='margin:20px 0 4px;font-size:14px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)'>Near misses</h3>";
+    h += hints.map(function (x) { return x.html; }).join("");
+  }
+
+  h += '<p class="note" style="margin-top:16px">Solver: ' + esc(r.mode) + ". Elapsed " + r.ms + " ms." +
+    (r.ctx && r.ctx.offers.length ? " Card cashback sits outside order totals; offers are matched to orders after coupons are chosen, " +
+      "with a bounded re-check for cases where a smaller discount would unlock more cashback." : "") +
+    " Read-only plan &mdash; place these orders yourself.</p>";
+
+  host.innerHTML = h;
+  renderWarnings(computeWarnings(r));
+}
+
+function totalsHtml(plan, label, saved) {
+  var h = '<div class="card" style="margin:8px 0;padding:12px">';
+  h += '<div class="kv"><span class="k">Grand total (' + plan.orders.length + " order" +
+    (plan.orders.length === 1 ? "" : "s") + ")</span><span class='v'>" + fmt(plan.grandC) + "</span></div>";
+  if (plan.cashC > 0) {
+    plan.orders.forEach(function (o, n) {
+      if (o.offer) h += '<div class="kv sub"><span class="k">&nbsp;&nbsp;Order ' + (n + 1) + " &middot; " +
+        esc(o.offer.label || "card offer") + '</span><span class="v neg">-' + fmt(o.offer.cbC) + "</span></div>";
+    });
+    plan.globals.forEach(function (g) {
+      h += '<div class="kv sub"><span class="k">&nbsp;&nbsp;' + esc(g.label || "card offer") +
+        ' (whole split)</span><span class="v neg">-' + fmt(g.cbC) + "</span></div>";
+    });
+    h += '<div class="kv"><span class="k">Card cashback</span><span class="v neg">-' + fmt(plan.cashC) + "</span></div>";
+  }
+  h += '<div class="kv tot"><span class="k">' + esc(label) + '</span><span class="v">' + fmt(plan.netC) + "</span></div>";
+  if (saved !== undefined) {
+    h += '<div class="kv"><span class="k">vs baseline</span><span class="v ' + (saved > 0 ? "neg" : "") + '">' +
+      (saved > 0 ? "saves " + fmt(saved) : (saved < 0 ? "costs " + fmt(-saved) + " more" : "no change")) + "</span></div>";
+  }
+  return h + "</div>";
+}
+
+$("#results").addEventListener("change", function (e) {
+  var key = e.target.dataset.done; if (!key) return;
+  if (e.target.checked) state.done[key] = 1; else delete state.done[key];
+  e.target.closest(".order").classList.toggle("done", e.target.checked);
+  save();
+});
+$("#results").addEventListener("click", function (e) {
+  var b = e.target.closest("[data-copy]"); if (!b) return;
+  copyText(b.dataset.copy, b);
+});
+
+/* ==========================================================================
+   RUN + BOOT
+   ========================================================================== */
+var lastResult = null;
+
+$("#optimizeBtn").addEventListener("click", function () {
+  var btn = this;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spin"></span>&nbsp;Optimizing';
+  setTimeout(function () {
+    var r;
+    try { r = optimize(); }
+    catch (e) { r = { error: "Optimizer failed: " + e.message }; if (window.console) console.error(e); }
+    lastResult = r;
+    try { renderResult(r); }
+    catch (e2) {
+      $("#results").innerHTML = '<p class="empty">Could not render the plan: ' + esc(e2.message) + "</p>";
+      if (window.console) console.error(e2);
+    }
+    btn.disabled = false;
+    btn.textContent = "Optimize";
+    clearStale();
+    $("#resultsCard").scrollIntoView({ behavior: "smooth", block: "start" });
+  }, 30);
+});
+
+/* ------------------------------------------------------------- sample -- */
+function loadSample() {
+  state.items = [
+    { name: "Ribbed Knit Cardigan", price: "24.99", qty: 1, category: "Women", brand: "SHEIN" },
+    { name: "High-Rise Wide Leg Jeans", price: "19.50", qty: 1, category: "Women", brand: "EZwear", flags: { flashSale: true } },
+    { name: "Ceramic Mug Set", price: "12.00", qty: 2, category: "Home", brand: "SHEIN Home" },
+    { name: "Matte Lip Set", price: "8.99", qty: 1, category: "Beauty", brand: "SHEGLAM", flags: { clearance: true } },
+    { name: "Chunky Sneakers", price: "32.00", qty: 1, category: "Shoes", brand: "EZwear" },
+    { name: "Cotton Crew Socks", price: "4.25", qty: 3, category: "Women", brand: "SHEIN" },
+    { name: "LED Strip Lights", price: "15.75", qty: 1, category: "Home", brand: "", flags: { bundle: true } },
+    { name: "Gold Hoop Earrings", price: "6.50", qty: 2, category: "Jewelry", brand: "SHEIN" }
+  ].map(newItem);
+
+  var c1 = newCoupon({ code: "SAVE20", label: "20% off full-price", payoff: "percent", value: 20,
+    maxDiscount: 15, minSpend: 60, singleUse: true });
+  var c2 = newCoupon({ code: "EXTRA8", label: "$8 off $45", payoff: "fixed", value: 8,
+    minSpend: 45, appliesToDiscountedItems: true, singleUse: true });
+  var c3 = newCoupon({ code: "HOME5", label: "$5 off home", payoff: "fixed", value: 5,
+    minSpend: 25, includeCategories: ["Home"], singleUse: true });
+  var c4 = newCoupon({ code: "BUY3GET1", label: "Buy 3 women's, cheapest free", payoff: "cheapestFree", value: 1,
+    minItems: 3, includeCategories: ["Women"], singleUse: true, enabled: false,
+    notes: "Turn this on to see the local-search path take over from the MILP." });
+  state.coupons = [c1, c2, c3, c4];
+
+  state.offers = [newOffer({ label: "Card: $10 back on $75+", minSpend: 75, cashback: 10, perTransaction: true, maxUses: 1 })];
+  state.shipping = { freeThreshold: 29, flatFee: 3.99, perOrder: true, measure: "after" };
+  state.settings.maxOrders = 3;
+  state.categories = ["Beauty", "Home", "Jewelry", "Shoes", "Women"];
+  state.done = {};
+  renderAll(); save(); markStale();
+}
+$("#demoBtn").addEventListener("click", function () {
+  if (state.items.length && !confirm("Replace the current cart, coupons and offers with the sample?")) return;
+  loadSample();
+});
+
+/* --------------------------------------------------------------- icon -- */
+function paintIcon() {
+  try {
+    var c = document.createElement("canvas");
+    c.width = c.height = 180;
+    var g = c.getContext("2d");
+    g.fillStyle = "#c81e5b"; g.fillRect(0, 0, 180, 180);
+    g.fillStyle = "#ffffff";
+    g.fillRect(26, 40, 56, 100);
+    g.fillRect(98, 40, 56, 62);
+    g.fillRect(98, 116, 56, 24);
+    $("#touchIcon").href = c.toDataURL("image/png");
+    $("#favIcon").href = c.toDataURL("image/png");
+  } catch (e) { /* canvas blocked: the page still works */ }
+}
+
+/* --------------------------------------------------------------- boot -- */
+function renderAll() {
+  renderItems();
+  renderCoupons();
+  renderOffers();
+  renderSettings();
+  renderCatList();
+  renderWarnings(computeWarnings(lastResult));
+}
+
+document.addEventListener("DOMContentLoaded", function () {
+  $$(".verText").forEach(function (el) { el.textContent = "v" + VERSION; });
+  load();
+  renderAll();
+  markStale();
+  paintIcon();
+  if (!state.items.length && !state.coupons.length) {
+    $("#results").innerHTML = '<p class="empty">Nothing to plan yet. Tap <b>Sample cart</b> to see a worked example, ' +
+      "or add your items by hand.</p>";
+  }
+});
+</script>
+</body>
+</html>
