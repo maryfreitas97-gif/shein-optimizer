@@ -1,6 +1,6 @@
 // Side panel shell. MV3 extension pages can't run the inline scripts in
 // index.html, so the panel frames the hosted page and acts as its bridge to
-// the SHEIN tab. Read-only: it runs SheinParser.capture() in the tab and
+// the SHEIN tab. Read-only: it runs SheinParser.captureAny() in the tab and
 // passes back that capture. It never clicks, submits or changes anything.
 
 var APP_URL = "https://maryfreitas97-gif.github.io/shein-optimizer/";
@@ -44,7 +44,7 @@ async function captureActiveTab() {
   var tab = tabs[0];
   // tab.url is only visible for sites in host_permissions, i.e. SHEIN.
   if (!tab || !tab.url || !SHEIN_URL.test(tab.url)) {
-    return { error: "Open your SHEIN cart page in this window's active tab, then import again." };
+    return { error: "Open your SHEIN cart or My Coupons page in this window's active tab, then import again." };
   }
   var target = { tabId: tab.id };
   await chrome.scripting.executeScript({ target: target, world: "MAIN", files: ["parsers/shein.js"] });
@@ -52,7 +52,7 @@ async function captureActiveTab() {
     target: target,
     world: "MAIN",
     func: function () {
-      try { return { data: window.SheinParser.capture() }; }
+      try { return { data: window.SheinParser.captureAny() }; }
       catch (e) { return { error: e.message }; }
       finally { delete window.SheinParser; }
     }

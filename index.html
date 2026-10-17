@@ -165,8 +165,7 @@ footer.foot{color:var(--muted);font-size:12px;text-align:center;padding:14px 8px
 @keyframes sp{to{transform:rotate(360deg)}}
 .stale{color:var(--warn);font-size:12px}
 .btn[hidden]{display:none}
-.imp{margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
-.imp .banner{margin:8px 0 0}
+#impNotes .banner{margin:8px 0 0}
 </style>
 </head>
 <body>
@@ -179,25 +178,28 @@ footer.foot{color:var(--muted);font-size:12px;text-align:center;padding:14px 8px
   </header>
 
   <section class="card">
+    <div class="sec-head"><h2>Import from SHEIN</h2></div>
+    <p class="note" id="impHelp">Paste a capture of your SHEIN cart or of My Coupons. Items replace the table; coupons are merged by code.</p>
+    <label class="f"><span>From a cart, import</span>
+      <select id="impScope">
+        <option value="checked">Only items ticked for checkout</option>
+        <option value="all">Every line in the cart</option>
+      </select>
+    </label>
+    <div class="btnrow">
+      <button class="btn primary" id="extImportBtn" hidden>Import from this SHEIN tab</button>
+      <button class="btn" id="pasteCartBtn">Paste capture</button>
+    </div>
+    <div id="impNotes"></div>
+  </section>
+
+  <section class="card">
     <div class="sec-head"><h2>1 &middot; Items</h2><span class="pill" id="itemsPill">0 items</span></div>
     <div id="itemList"></div>
     <div class="btnrow">
       <button class="btn primary" id="addItemBtn">+ Add item</button>
       <button class="btn ghost" id="demoBtn">Sample cart</button>
       <button class="btn ghost danger" id="clearItemsBtn">Clear</button>
-    </div>
-    <div class="imp">
-      <label class="f"><span>Import from a SHEIN cart</span>
-        <select id="impScope">
-          <option value="checked">Only items ticked for checkout</option>
-          <option value="all">Every line in the cart</option>
-        </select>
-      </label>
-      <div class="btnrow">
-        <button class="btn primary" id="extImportBtn" hidden>Import from this cart</button>
-        <button class="btn" id="pasteCartBtn">Paste captured cart</button>
-      </div>
-      <div id="impNotes"></div>
     </div>
   </section>
 
@@ -257,7 +259,7 @@ footer.foot{color:var(--muted);font-size:12px;text-align:center;padding:14px 8px
   </section>
 
   <footer class="foot">
-    Cart Split Optimizer &mdash; <span class="verText"></span> &middot; step 2: cart import<br>
+    Cart Split Optimizer &mdash; <span class="verText"></span> &middot; step 3: cart + coupon import<br>
     Read-only. Nothing here logs in, adds to a cart, or checks out.
   </footer>
 </div>
@@ -278,7 +280,7 @@ footer.foot{color:var(--muted);font-size:12px;text-align:center;padding:14px 8px
    Step 1: manual entry -> optimizer -> plan. No network except the CDN solver.
    ========================================================================== */
 
-var VERSION = "0.2.0";
+var VERSION = "0.3.0";
 var STORE_KEY = "sco.v1";
 var TIME_BUDGET_MS = 2600;          /* hard ceiling; target is < 3s on an A-series iPad */
 var MILP_MAX_ITEMS = 12;            /* above this the MILP branch-and-bound is too slow */
@@ -304,7 +306,10 @@ function fmt(c) {
 }
 function fmtSigned(c) { return (c > 0 ? "+" : "") + fmt(c); }
 function uid() { return Math.random().toString(36).slice(2, 9) + Date.now().toString(36).slice(-3); }
-function today() { return new Date().toISOString().slice(0, 10); }
+function today() {                  /* the device's local date: coupon expiry is a calendar date, not UTC */
+  var d = new Date();
+  return d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2);
+}
 function esc(s) {
   return String(s == null ? "" : s).replace(/[&<>"']/g, function (m) {
     return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m];
@@ -332,6 +337,7 @@ function newItem(p) {
     qty: p.qty == null ? 1 : p.qty,
     category: p.category || "",
     brand: p.brand || "",
+    store: p.store || "",
     flags: {
       flashSale: !!(p.flags && p.flags.flashSale),
       clearance: !!(p.flags && p.flags.clearance),
@@ -350,7 +356,9 @@ function newCoupon(p) {
     maxDiscount: p.maxDiscount == null ? null : p.maxDiscount,
     minSpend: p.minSpend == null ? 0 : p.minSpend,
     minItems: p.minItems == null ? 0 : p.minItems,
+    tiers: (p.tiers || []).map(function (t) { return { minSpend: t.minSpend == null ? 0 : t.minSpend, value: t.value == null ? "" : t.value }; }),
     includeCategories: p.includeCategories || [],
+    includeStores: p.includeStores || [],
     excludeCategories: p.excludeCategories || [],
     appliesToDiscountedItems: !!p.appliesToDiscountedItems,
     singleUse: p.singleUse === undefined ? true : !!p.singleUse,
@@ -480,6 +488,9 @@ function itemRow(it) {
     '</div>' +
     '<div class="grid2">' +
       '<label class="f"><span>Brand</span><input data-f="brand" autocomplete="off" value="' + esc(it.brand) + '"></label>' +
+      '<label class="f"><span>Store</span><input data-f="store" autocomplete="off" value="' + esc(it.store) + '"></label>' +
+    '</div>' +
+    '<div>' +
       '<div class="flags">' +
         flagChip(it, "flashSale", "Flash sale") +
         flagChip(it, "clearance", "Clearance") +
@@ -559,8 +570,21 @@ function couponById(id) {
 function isExpired(c) { return !!(c.expires && c.expires < today()); }
 function couponActive(c) { return c.enabled !== false && !isExpired(c); }
 
+function tierList(c) {
+  if (c.payoff !== "fixed" && c.payoff !== "percent") return [];
+  return [{ minSpend: c.minSpend, value: c.value }].concat(c.tiers || []);
+}
+function tierText(c, lv) {
+  var v = c.payoff === "percent" ? (Number(lv.value) || 0) + "%" : fmt(toC(lv.value));
+  return v + (Number(lv.minSpend) > 0 ? " at " + fmt(toC(lv.minSpend)) + "+" : " with no minimum");
+}
+/* "(tier 2 of 3)" for an optimizer variant of a tiered coupon, else "" */
+function tierTag(c) { return c.tierCount > 1 ? " (tier " + c.tier + " of " + c.tierCount + ")" : ""; }
+
 function payoffSummary(c) {
   var v = Number(c.value) || 0;
+  if (tierList(c).length > 1) return tierList(c).map(function (lv) { return tierText(c, lv); }).join(", ") +
+    " off" + (c.maxDiscount ? " (max " + fmt(toC(c.maxDiscount)) + ")" : "");
   if (c.payoff === "fixed") return fmt(toC(c.value)) + " off";
   if (c.payoff === "percent") return v + "% off" + (c.maxDiscount ? " (max " + fmt(toC(c.maxDiscount)) + ")" : "");
   if (c.payoff === "cheapestFree") return Math.max(1, Math.round(v)) + " cheapest unit" + (v > 1 ? "s" : "") + " free";
@@ -588,6 +612,8 @@ function renderCoupons() {
     else tags.push('<span class="tag">full price only</span>');
     if (c.includeCategories.length) tags.push('<span class="tag">only ' + esc(c.includeCategories.join(", ")) + "</span>");
     if (c.excludeCategories.length) tags.push('<span class="tag">not ' + esc(c.excludeCategories.join(", ")) + "</span>");
+    if (c.includeStores.length) tags.push('<span class="tag">store: ' + esc(c.includeStores.join(", ")) + "</span>");
+    if (tierList(c).length > 1) tags.push('<span class="tag">' + tierList(c).length + " tiers</span>");
     if (c.stackableWith.length) tags.push('<span class="tag">stacks with ' + c.stackableWith.length + "</span>");
     if (c.uncertain) tags.push('<span class="tag warn">terms uncertain</span>');
     if (isExpired(c)) tags.push('<span class="tag warn">expired ' + esc(c.expires) + "</span>");
@@ -646,6 +672,13 @@ function editCoupon(existing) {
       '<label class="f"><span>Gate: min spend</span><input id="cMinSpend" type="text" inputmode="decimal" value="' + esc(c.minSpend) + '"></label>' +
       '<label class="f"><span>Gate: min items</span><input id="cMinItems" type="number" inputmode="numeric" min="0" step="1" value="' + esc(c.minItems) + '"></label>' +
     "</div>" +
+    '<div id="cTierWrap">' +
+      '<label class="f"><span>Higher tiers (same code, best one reached applies)</span></label>' +
+      '<div id="cTiers"></div>' +
+      '<div class="btnrow"><button class="btn sm" id="cAddTier" type="button">+ Add tier</button></div>' +
+    "</div>" +
+    '<label class="f"><span>Only these stores (comma separated, blank = any store)</span>' +
+      '<input id="cStores" value="' + esc(c.includeStores.join(", ")) + '" autocomplete="off"></label>' +
     '<label class="f"><span>Only these categories (comma separated, blank = all)</span>' +
       '<input id="cInc" list="catlist" value="' + esc(c.includeCategories.join(", ")) + '" autocomplete="off"></label>' +
     '<label class="f"><span>Never these categories</span>' +
@@ -671,6 +704,11 @@ function editCoupon(existing) {
       c.maxDiscount = mx === "" ? null : mx;
       c.minSpend = $("#cMinSpend").value.trim() || 0;
       c.minItems = parseInt($("#cMinItems").value, 10) || 0;
+      c.tiers = $$("#cTiers .tier-row").map(function (r) {
+        return { minSpend: r.querySelector("[data-t=min]").value.trim() || 0, value: r.querySelector("[data-t=val]").value.trim() };
+      }).filter(function (lv) { return lv.value !== ""; })
+        .sort(function (a, b) { return toC(a.minSpend) - toC(b.minSpend); });
+      c.includeStores = splitList($("#cStores").value);
       c.includeCategories = splitList($("#cInc").value);
       c.excludeCategories = splitList($("#cExc").value);
       c.appliesToDiscountedItems = $("#cDisc").checked;
@@ -704,8 +742,21 @@ function editCoupon(existing) {
       renderCoupons(); save(); markStale();
     } : null
   );
+  function tierRow(lv) {
+    var r = document.createElement("div");
+    r.className = "grid2 tier-row";
+    r.innerHTML =
+      '<label class="f"><span>Min spend</span><input data-t="min" type="text" inputmode="decimal" value="' + esc(lv.minSpend) + '"></label>' +
+      '<label class="f"><span>Value</span><span style="display:flex;gap:6px"><input data-t="val" type="text" inputmode="decimal" value="' + esc(lv.value) + '">' +
+      '<button class="icon" type="button" aria-label="Remove tier">&times;</button></span></label>';
+    r.querySelector("button").addEventListener("click", function () { r.remove(); });
+    $("#cTiers").appendChild(r);
+  }
+  (c.tiers || []).forEach(tierRow);
+  $("#cAddTier").addEventListener("click", function () { tierRow({ minSpend: "", value: "" }); });
   var syncPayoff = function () {
     var p = $("#cPayoff").value;
+    $("#cTierWrap").hidden = (p !== "percent" && p !== "fixed");
     $("#cValueRow").hidden = (p === "freeShipping");
     $("#cMaxWrap").hidden = (p !== "percent");
     $("#cValueLbl").textContent =
@@ -889,7 +940,6 @@ $("#resetBtn").addEventListener("click", function () {
    parsers/shein.js. All SHEIN-specific knowledge stays in that file. */
 var importNote = null;
 function importCart(payload, source) {
-  if (!window.SheinParser) throw new Error("The cart parser (parsers/shein.js) did not load. Reload the page.");
   var r = window.SheinParser.parse(payload, { include: state.settings.importScope });
   if (!r.items.length) {
     importNote = { kind: "bad", msg: "No items imported from " + esc(source) + ".", list: r.warnings };
@@ -908,7 +958,7 @@ function importCart(payload, source) {
   if (r.meta.include === "checked" && cartC != null && cartC !== tableC)
     msg += " <b>SHEIN&rsquo;s cart shows " + fmt(cartC) + "</b>; check the prices below.";
   importNote = { kind: "good", msg: msg, list: r.warnings };
-  if (source === "this SHEIN tab") importNote.list = ["This reads the cart data the SHEIN page loaded with. " +
+  if (/SHEIN tab/.test(source)) importNote.list = ["This reads the cart data the SHEIN page loaded with. " +
     "If you ticked, unticked or changed items since, reload the cart page and import again."].concat(r.warnings);
   renderImportNote();
 }
@@ -918,8 +968,42 @@ function renderImportNote() {
     '<div class="banner ' + n.kind + '">' + n.msg + "</div>" +
     (n.list || []).map(function (w) { return '<div class="banner warn">' + esc(w) + "</div>"; }).join("");
 }
+function importCoupons(payload, source) {
+  var r = window.SheinParser.parseCoupons(payload);
+  var byCode = {};
+  state.coupons.forEach(function (c, i) { if (c.code) byCode[lc(c.code)] = i; });
+  var added = 0, updated = 0;
+  r.coupons.forEach(function (nc) {
+    var i = byCode[lc(nc.code)];
+    if (i === undefined) { state.coupons.push(newCoupon(nc)); added++; return; }
+    /* keep the user's own choices: on/off, stacking, and notes they wrote */
+    var old = state.coupons[i];
+    nc.id = old.id;
+    nc.enabled = old.enabled;
+    nc.stackableWith = old.stackableWith;
+    state.coupons[i] = newCoupon(nc);
+    updated++;
+  });
+  var seen = {}; r.coupons.forEach(function (c) { seen[lc(c.code)] = 1; });
+  var gone = state.coupons.filter(function (c) { return /^shein-coupon-/.test(c.id) && !seen[lc(c.code)]; }).length;
+  renderAll(); save(); markStale();
+  var msg = "Imported " + r.coupons.length + " coupon" + (r.coupons.length > 1 ? "s" : "") + " from " + esc(source) +
+    ": " + added + " new, " + updated + " updated.";
+  var list = r.warnings.slice();
+  if (gone) list.unshift(gone + " previously imported coupon" + (gone > 1 ? "s are" : " is") +
+    " no longer on that page (used or expired?). Turn them off if so.");
+  importNote = { kind: "good", msg: msg, list: list };
+  renderImportNote();
+}
+function importPayload(payload, source) {
+  if (!window.SheinParser) throw new Error("The SHEIN parser (parsers/shein.js) did not load. Reload the page.");
+  var kind = window.SheinParser.detect(payload);
+  if (kind === "coupons") importCoupons(payload, source);
+  else if (kind === "cart") importCart(payload, source);
+  else throw new Error("That doesn't look like a SHEIN cart or My Coupons capture.");
+}
 function tryImport(payload, source) {
-  try { importCart(payload, source); }
+  try { importPayload(payload, source); }
   catch (err) { importNote = { kind: "bad", msg: "Import failed: " + esc(err.message) }; renderImportNote(); }
 }
 $("#impScope").addEventListener("change", function () {
@@ -927,11 +1011,11 @@ $("#impScope").addEventListener("change", function () {
   save();
 });
 $("#pasteCartBtn").addEventListener("click", function () {
-  openSheet("Paste captured cart",
-    '<p class="note">Paste the JSON from the Shortcut or bookmarklet. The page source of the SHEIN cart page works too. ' +
-    "Items in the table are replaced; coupons, card offers and settings stay.</p>" +
-    '<textarea id="cartBox" placeholder="{ &quot;capturedBy&quot;: &quot;shein &hellip;" }"></textarea>', function () {
-      tryImport($("#cartBox").value, "the pasted cart");
+  openSheet("Paste capture",
+    '<p class="note">Paste the JSON from the Shortcut or bookmarklet, or the saved HTML of your SHEIN cart or My Coupons page. ' +
+    "A cart replaces the items in the table. Coupons are merged by code: new ones are added, existing ones updated.</p>" +
+    '<textarea id="cartBox" placeholder="{ &quot;capturedBy&quot;: &quot;shein &hellip; }"></textarea>', function () {
+      tryImport($("#cartBox").value, "the pasted capture");
     });
 });
 
@@ -949,6 +1033,7 @@ window.addEventListener("message", function (e) {
   if (m.type === "hello") {
     extOrigin = e.origin;
     $("#extImportBtn").hidden = false;
+    $("#impHelp").textContent = "Open your SHEIN cart or My Coupons in this window, then import. Items replace the table; coupons are merged by code.";
   } else if (m.type === "capture" && e.origin === extOrigin) {
     $("#extImportBtn").disabled = false;
     if (m.error) { importNote = { kind: "bad", msg: esc(m.error) }; renderImportNote(); }
@@ -1001,6 +1086,7 @@ function isEligible(c, it) {
   var cat = lc(it.category);
   if (c.incLC.length && c.incLC.indexOf(cat) < 0) return false;
   if (c.excLC.length && c.excLC.indexOf(cat) >= 0) return false;
+  if (c.storeLC.length && c.storeLC.indexOf(lc(it.store)) < 0) return false;
   return true;
 }
 
@@ -1014,19 +1100,35 @@ function buildCtx() {
     val[i] = unit[i] * qty[i];
   });
 
-  var coupons = state.coupons.filter(couponActive).slice(0, 30).map(function (c) {
-    var d = Object.create(c);
-    d.incLC = c.includeCategories.map(lc);
-    d.excLC = c.excludeCategories.map(lc);
-    d.minSpendC = toC(c.minSpend);
-    d.minItemsN = Math.max(0, Math.round(Number(c.minItems) || 0));
-    d.valC = toC(c.value);
-    d.pct = Number(c.value) || 0;
-    d.capC = (c.maxDiscount === null || c.maxDiscount === "") ? null : toC(c.maxDiscount);
-    d.units = Math.max(1, Math.round(Number(c.value) || 1));
-    return d;
+  /* A tiered coupon becomes one variant per tier, each with its own gate and
+     value. Variants share their source coupon's group, and single-use is
+     tracked per group, so two tiers of one code never both get used. */
+  var active = state.coupons.filter(couponActive).slice(0, 30);
+  var coupons = [];
+  active.forEach(function (c, g) {
+    var levels = [{ minSpend: c.minSpend, value: c.value }];
+    if (c.payoff === "fixed" || c.payoff === "percent") levels = levels.concat(c.tiers || []);
+    levels.forEach(function (lv, t) {
+      var d = Object.create(c);
+      d.group = g;
+      d.tier = levels.length > 1 ? t + 1 : 0;
+      d.tierCount = levels.length;
+      d.minSpend = lv.minSpend;
+      d.value = lv.value;
+      d.incLC = c.includeCategories.map(lc);
+      d.excLC = c.excludeCategories.map(lc);
+      d.storeLC = (c.includeStores || []).map(lc);
+      d.minSpendC = toC(lv.minSpend);
+      d.minItemsN = Math.max(0, Math.round(Number(c.minItems) || 0));
+      d.valC = toC(lv.value);
+      d.pct = Number(lv.value) || 0;
+      d.capC = (c.maxDiscount === null || c.maxDiscount === "") ? null : toC(c.maxDiscount);
+      d.units = Math.max(1, Math.round(Number(lv.value) || 1));
+      coupons.push(d);
+    });
   });
   var C = coupons.length;
+  function useBit(ci) { return coupons[ci].singleUse ? (1 << coupons[ci].group) : 0; }
   var elig = coupons.map(function (c) {
     var u = new Uint8Array(N);
     for (var i = 0; i < N; i++) u[i] = isEligible(c, items[i]) ? 1 : 0;
@@ -1037,13 +1139,13 @@ function buildCtx() {
   var sets = [[]], setMask = [0], setHasCF = [false];
   for (var a = 0; a < C; a++) {
     sets.push([a]);
-    setMask.push(coupons[a].singleUse ? (1 << a) : 0);
+    setMask.push(useBit(a));
     setHasCF.push(coupons[a].payoff === "cheapestFree");
   }
   for (a = 0; a < C; a++) for (var b = a + 1; b < C; b++) {
-    if (!stacks(coupons[a], coupons[b])) continue;
+    if (coupons[a].group === coupons[b].group || !stacks(coupons[a], coupons[b])) continue;
     sets.push([a, b]);
-    setMask.push((coupons[a].singleUse ? (1 << a) : 0) | (coupons[b].singleUse ? (1 << b) : 0));
+    setMask.push(useBit(a) | useBit(b));
     setHasCF.push(coupons[a].payoff === "cheapestFree" || coupons[b].payoff === "cheapestFree");
   }
 
@@ -1127,7 +1229,7 @@ function assignOffers(ctx, totals, K) {
 function makeEvaluator(ctx, K, setsOverride) {
   var sets = setsOverride || ctx.sets;
   var setMask = setsOverride ? setsOverride.map(function (s) {
-    var m = 0; s.forEach(function (ci) { if (ctx.coupons[ci].singleUse) m |= (1 << ci); }); return m;
+    var m = 0; s.forEach(function (ci) { if (ctx.coupons[ci].singleUse) m |= (1 << ctx.coupons[ci].group); }); return m;
   }) : ctx.setMask;
   var N = ctx.N, C = ctx.C, val = ctx.val, qty = ctx.qty, unit = ctx.unit, elig = ctx.elig, cps = ctx.coupons;
   var S = sets.length;
@@ -1735,7 +1837,7 @@ function nearMisses(r) {
           usesCoupon(c),
           function (item, fromN) {
             return "Order " + num[j] + " is <b>" + fmt(gapSpend) + " under the " + fmt(c.minSpendC) +
-              ' threshold</b> for <span class="code">' + esc(c.code || c.label) + "</span> &mdash; move &ldquo;" +
+              ' threshold</b> for <span class="code">' + esc(c.code || c.label) + "</span>" + esc(tierTag(c)) + " &mdash; move &ldquo;" +
               esc(item.name || "(unnamed)") + "&rdquo; from Order " + fromN + " to qualify.";
           }, effect);
         if (h) hints.push(h);
@@ -1743,7 +1845,7 @@ function nearMisses(r) {
           delta: 9e9,
           html: '<div class="hint">Order ' + num[j] + " is <b>" + fmt(gapSpend) + " under the " + fmt(c.minSpendC) +
             ' threshold</b> for <span class="code">' + esc(c.code || c.label) +
-            '</span>.<div class="d">No single move from another order closes that gap and leaves the coupon worth using.</div></div>'
+            "</span>" + esc(tierTag(c)) + '.<div class="d">No single move from another order closes that gap and leaves the coupon worth using.</div></div>'
         });
       } else if (gapItems > 0 && gapItems <= 2) {
         var h2 = tryMove(j,
@@ -1806,6 +1908,16 @@ function computeWarnings(r) {
       " no category</b> while " + catScoped.length + " coupon" + (catScoped.length > 1 ? "s are" : " is") +
       " category-scoped. Uncategorised items count as ineligible for &ldquo;only these categories&rdquo; coupons." });
   }
+
+  var storeScoped = state.coupons.filter(couponActive).filter(function (c) { return c.includeStores.length; });
+  var live = state.items.filter(function (it) { return Math.round(Number(it.qty) || 0) > 0; });
+  var noMatch = storeScoped.filter(function (c) {
+    var want = c.includeStores.map(lc);
+    return !live.some(function (it) { return want.indexOf(lc(it.store)) >= 0; });
+  });
+  if (live.length && noMatch.length) w.push({ kind: "warn", msg: "<b>" + noMatch.length + " store coupon" + (noMatch.length > 1 ? "s match" : " matches") +
+    " no item</b> (" + noMatch.map(function (c) { return esc(c.code) + ": " + esc(c.includeStores.join(", ")); }).join("; ") +
+    "). If you have items from that store, set their <b>Store</b> field to the same name." });
 
   var uncertain = state.coupons.filter(couponActive).filter(function (c) { return c.uncertain; });
   if (uncertain.length) w.push({ kind: "warn", msg: "Coupon terms flagged uncertain: " +
@@ -1894,7 +2006,7 @@ function orderHtml(o, title, opts) {
   o.breakdown.forEach(function (b) {
     lines += '<div class="kv"><span class="k">' +
       (b.coupon.payoff === "freeShipping" ? "Free shipping " : "Coupon ") +
-      '<span class="code">' + esc(b.coupon.code || b.coupon.label || "(no code)") + "</span></span>" +
+      '<span class="code">' + esc(b.coupon.code || b.coupon.label || "(no code)") + "</span>" + esc(tierTag(b.coupon)) + "</span>" +
       '<span class="v neg">' + (b.discC > 0 ? "-" + fmt(b.discC) : "&mdash;") + "</span></div>";
     lines += '<div class="kv sub"><span class="k">&nbsp;&nbsp;eligible subtotal</span><span class="v">' + fmt(b.eligC) + "</span></div>";
   });

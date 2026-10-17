@@ -36,6 +36,9 @@ land as cheaply as possible. You place the orders by hand.
    **Done (v0.2.0)**, with input mode C wired into `index.html`.
 2b. Chrome extension (`manifest.json` at the repo root, code in
    `extension/`). **Done (v0.2.0).**
+2c. Coupon import from My Coupons, mapped from a real saved page, with
+   tiers and store scope in the model. **Done (v0.3.0).** Pending: confirm
+   which cart field carries the store name that store coupons use.
 3. `shortcut.md` — iOS Shortcut steps, including the exact JS for the
    "Run JavaScript on Web Page" action (async, returns via `completion()`),
    triggered from the Safari share sheet.
@@ -49,8 +52,13 @@ Ship each step before starting the next.
 - **A. Manual entry / editable table.** The guaranteed fallback. Built.
 - **B. Paste raw cart page text.** Heuristic parse. Not built.
 - **C. Paste JSON captured by the Shortcut or bookmarklet.** Built. The
-  extension's "Import from this cart" button goes through the same
-  `importCart()` code path.
+  extension's "Import from this SHEIN tab" button goes through the same
+  `importPayload()` code path.
+
+Captures are routed by `SheinParser.detect()`: a cart capture replaces the
+item table; a My Coupons capture is merged into the coupons by code, keeping
+the user's on/off and stacking choices. The extension's one button imports
+whichever of the two pages is open.
 
 All three land in the same editable table, and the table stays editable after
 any import. Import takes items ticked for checkout by default, with a setting
@@ -83,14 +91,14 @@ back. All SHEIN-specific code stays in that one file.
 ## Data model
 
 ```
-Item        {id, name, price, qty, category, brand,
+Item        {id, name, price, qty, category, brand, store,
              flags:{flashSale, clearance, bundle}}
 
 Coupon      {id, code, label,
              payoff:"fixed"|"percent"|"cheapestFree"|"freeShipping",
              value, maxDiscount|null,
-             minSpend, minItems,
-             includeCategories[], excludeCategories[],
+             minSpend, minItems, tiers[{minSpend, value}],
+             includeCategories[], excludeCategories[], includeStores[],
              appliesToDiscountedItems, singleUse, stackableWith[],
              expires, uncertain, notes, enabled}
 
@@ -107,6 +115,15 @@ A coupon is a **gate** plus a **payoff**, not a type.
   eligible subtotal, capped by `maxDiscount`), `cheapestFree` (the `value`
   cheapest eligible units are free), `freeShipping` (waives shipping on that
   order).
+
+- Tiers — optional, `fixed` and `percent` only. `tiers[]` lists the levels
+  above the base `minSpend`/`value` ("20% off $79+, 22% off $139+"). An order
+  gets the best tier it reaches; `maxDiscount` is shared; all tiers share the
+  coupon's single use. Inside the optimizer each tier is a separate variant
+  with its own gate, grouped under the source coupon, and single-use masks are
+  per group, so two tiers of one code can never both be used.
+- Store scope — `includeStores[]` matches `Item.store`, case-insensitive.
+  Blank means any store. The UI warns when a store coupon matches no item.
 
 This covers "buy 3 get 1 free" (`minItems 3` + `cheapestFree 1`), "$5 off 3+
 items" (`minItems 3` + `fixed 5`), and "20% off when you buy 2" (`minItems 2` +
@@ -181,6 +198,13 @@ Solver routing:
   discount. It is a user setting, because stores differ.
 - Uncategorised items count as ineligible for "only these categories" coupons,
   and the UI warns when that is happening.
+- My Coupons has no embedded data, only rendered cards, so the coupon parser
+  reads SHEIN's screen-reader summaries (`.coupon-left__sr-only`,
+  `.coupon-right__sr-only`) plus `.discount-limit` and `.category-info`.
+- "For selected products" coupons don't say which products. They are treated
+  as covering every item and imported with `uncertain: true`. Cards don't
+  state flash-sale coverage or stacking either, so imports assume neither.
+- Expiry compares against the device's local date, never UTC.
 
 ## Testing
 

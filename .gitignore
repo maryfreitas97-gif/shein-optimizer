@@ -3,3 +3,10 @@
 cart.json*
 cart*.rtf
 capture*.json
+coupon*.html
+coupon*.json
+coupon*.txt
+coupon*.rtf
+coupon*_files/
+cart*.html
+cart*_files/

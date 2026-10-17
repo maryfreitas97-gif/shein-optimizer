@@ -9,16 +9,23 @@ no build step, no server, no login, no analytics.
 
 ## Status
 
-**v0.2.0.** `index.html` works end to end with manual entry, and now imports a
-SHEIN cart:
+**v0.3.0.** `index.html` works end to end with manual entry, and imports both
+your SHEIN cart and your coupons from My Coupons:
 
-- `parsers/shein.js` maps a real SHEIN cart capture into the item table.
-- **Paste captured cart** (in the Items card) takes the JSON a capture produces.
-- A Chrome extension adds **Import from this cart** on desktop.
+- `parsers/shein.js` maps real captures of the cart and My Coupons pages.
+- **Paste capture** (in the Import card) takes a capture, or the saved HTML of
+  either page.
+- A Chrome extension adds **Import from this SHEIN tab** on desktop.
+- Coupons can have tiers ("20% off $79+, 22% off $139+") and can be limited
+  to one store ("Apply to MOTF only").
 
 Import takes the items ticked for checkout by default; the selector above the
 buttons switches to every line. Categories and flash-sale/clearance flags are
 not detected yet, so set them in the table.
+
+Coupons marked "for selected products" don't say which products, so they are
+treated as covering everything and flagged uncertain. Check the plan against
+checkout before you place it.
 
 Still to come:
 
@@ -86,8 +93,9 @@ changes it or goes near checkout.
 2. In Chrome, open `chrome://extensions`, turn on **Developer mode**, click
    **Load unpacked** and pick this repository's root folder (the one with
    `manifest.json` in it).
-3. Open your SHEIN cart, click the extension's toolbar icon to open the side
-   panel, then click **Import from this cart**.
+3. Open your SHEIN cart or My Coupons, click the extension's toolbar icon to
+   open the side panel, then click **Import from this SHEIN tab**. Do it once
+   on each page.
 
 On click, the extension runs `SheinParser.capture()` in the SHEIN tab and hands
 back only the cart lines and totals. Your address, member id and session
@@ -102,7 +110,9 @@ frame a local copy instead of the hosted one.
 
 ## When the parser breaks
 
-All SHEIN-specific code is in `parsers/shein.js`. The cart is read from the
+All SHEIN-specific code is in `parsers/shein.js`. Coupons are read from the
+cards on My Coupons (`[id^="coupon-item-"]` and their screen-reader summary
+text). The cart is read from the
 `gbCartSsrData` object SHEIN embeds in the cart page. If imports start failing
 or prices look wrong, save a fresh copy of the cart page, check that object's
 `originCartInfo.mallCartInfo.mallCarts[].shops[].contentData[].productLineInfoList[]`
