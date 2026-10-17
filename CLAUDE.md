@@ -6,16 +6,22 @@ land as cheaply as possible. You place the orders by hand.
 
 ## Hard constraints — do not violate these
 
-- **iPad only.** No Mac, no Xcode, no build tooling. Everything must run in
-  mobile Safari as plain files. No npm install, no bundler, no transpile step.
-- **No browser extension.** Ever. The capture path is an iOS Shortcut or a
-  bookmarklet.
+- **The hosted `index.html` must keep working on iPad Safari with manual
+  entry.** No Xcode, no build tooling. Everything runs as plain files. No npm
+  install, no bundler, no transpile step.
+- **The Chrome extension is a desktop add-on on top of the hosted page,**
+  never a replacement for it. Its side panel embeds the hosted `index.html`;
+  nothing in `index.html` may depend on the extension being present. On iPad
+  the capture path stays an iOS Shortcut or a bookmarklet.
 - **Read-only.** Never automate checkout, never modify the cart, never log in.
+  The extension reads the cart and never modifies it or touches checkout.
   The output is a plan the user executes manually.
-- **No login, no server, no analytics.** The only permitted network call is the
-  CDN fetch for the LP solver. Everything else is local.
+- **No login, no server, no analytics.** The only permitted network calls are the
+  CDN fetch for the LP solver and, in the extension, loading the hosted page
+  itself. Everything else is local.
 - `index.html` is **one self-contained file**: inline CSS, inline JS. CDN
   dependencies are allowed; local sibling files are not (except the parser).
+  The extension's own files live outside it.
 - The solver must be **pure JS, not WASM** — `javascript-lp-solver`. WASM
   builds are unreliable in iPad Safari.
 - The page must keep working after first load and be add-to-Home-Screen
@@ -25,7 +31,11 @@ land as cheaply as possible. You place the orders by hand.
 ## Deliverables and build order
 
 1. `index.html` — manual entry, optimizer, output. **Done (v0.1.0).**
-2. `parsers/shein.js` — swappable extractor, field mapping stubbed with TODOs.
+2. `parsers/shein.js` — swappable extractor, mapped from a real capture.
+   Category names and flash/clearance flags stay TODO until confirmed.
+   **Done (v0.2.0)**, with input mode C wired into `index.html`.
+2b. Chrome extension (`manifest.json` at the repo root, code in
+   `extension/`). **Done (v0.2.0).**
 3. `shortcut.md` — iOS Shortcut steps, including the exact JS for the
    "Run JavaScript on Web Page" action (async, returns via `completion()`),
    triggered from the Safari share sheet.
@@ -38,10 +48,30 @@ Ship each step before starting the next.
 
 - **A. Manual entry / editable table.** The guaranteed fallback. Built.
 - **B. Paste raw cart page text.** Heuristic parse. Not built.
-- **C. Paste JSON captured by the Shortcut or bookmarklet.** Not built.
+- **C. Paste JSON captured by the Shortcut or bookmarklet.** Built. The
+  extension's "Import from this cart" button goes through the same
+  `importCart()` code path.
 
 All three land in the same editable table, and the table stays editable after
-any import.
+any import. Import takes items ticked for checkout by default, with a setting
+for all lines.
+
+## Chrome extension
+
+- `manifest.json` sits at the repo root so the extension can load
+  `parsers/shein.js` without a copy. The folder to load unpacked is the repo
+  root.
+- MV3 extension pages forbid inline and CDN scripts, so the side panel
+  (`extension/panel.html`) is a thin shell that frames the hosted
+  `index.html` from GitHub Pages.
+- It reads the embedded page data by running `SheinParser.capture()` in the
+  tab's MAIN world on click. It never intercepts or replays requests.
+- Only `capture()`'s output (cart lines and totals) crosses from the page to
+  the panel. Address, member id and tokens never leave the tab.
+- Panel ↔ page messages are tagged and origin-checked on both sides.
+- Permissions stay minimal: `sidePanel`, `scripting`, host access to
+  `*.shein.com` only.
+- Raw captures contain personal data and are gitignored. Never commit one.
 
 ## Parser rule
 

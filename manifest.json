@@ -1,0 +1,11 @@
+{
+  "manifest_version": 3,
+  "name": "Cart Split Optimizer",
+  "version": "0.2.0",
+  "description": "Read-only planner for splitting a SHEIN cart across orders. Reads the cart; never changes it or touches checkout.",
+  "permissions": ["sidePanel", "scripting"],
+  "host_permissions": ["https://*.shein.com/*"],
+  "background": { "service_worker": "extension/background.js" },
+  "side_panel": { "default_path": "extension/panel.html" },
+  "action": { "default_title": "Open Cart Split Optimizer" }
+}

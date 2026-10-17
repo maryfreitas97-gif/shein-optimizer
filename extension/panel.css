@@ -1,0 +1,7 @@
+html, body { margin: 0; height: 100%; background: #fff; color: #222; font: 14px/1.4 system-ui, sans-serif; }
+@media (prefers-color-scheme: dark) { html, body { background: #111; color: #eee; } }
+iframe { border: 0; width: 100%; height: 100%; display: block; }
+#offline { padding: 16px; }
+#offline[hidden] { display: none; }
+#appUrl { word-break: break-all; }
+button { font: inherit; padding: 8px 14px; }

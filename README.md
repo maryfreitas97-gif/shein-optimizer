@@ -9,15 +9,21 @@ no build step, no server, no login, no analytics.
 
 ## Status
 
-**Step 1 shipped — v0.1.0.** `index.html` works end to end with manual entry:
-add items by hand, define coupons and card offers through forms, run the
-optimizer, read the plan.
+**v0.2.0.** `index.html` works end to end with manual entry, and now imports a
+SHEIN cart:
+
+- `parsers/shein.js` maps a real SHEIN cart capture into the item table.
+- **Paste captured cart** (in the Items card) takes the JSON a capture produces.
+- A Chrome extension adds **Import from this cart** on desktop.
+
+Import takes the items ticked for checkout by default; the selector above the
+buttons switches to every line. Categories and flash-sale/clearance flags are
+not detected yet, so set them in the table.
 
 Still to come:
 
-- Step 2: paste raw cart page text, parsed heuristically.
-- Step 3: an iOS Shortcut and a bookmarklet that capture the cart as JSON,
-  plus `parsers/shein.js` to map a real payload.
+- Paste raw cart page text, parsed heuristically (input mode B).
+- An iOS Shortcut and a bookmarklet that run the capture on iPad.
 
 ## Deploy to GitHub Pages
 
@@ -69,5 +75,39 @@ Small carts are solved by enumerating coupon layouts and running a MILP per
 layout, alongside local search. Larger carts, and any cart with a
 cheapest-units-free coupon, go through seeded local search. The page always
 reports which mode ran and how long it took.
+
+## Chrome extension (desktop)
+
+A desktop add-on on top of the hosted page. It reads your SHEIN cart and never
+changes it or goes near checkout.
+
+1. GitHub Pages must be on (above). The side panel shows the hosted page from
+   `https://maryfreitas97-gif.github.io/shein-optimizer/`.
+2. In Chrome, open `chrome://extensions`, turn on **Developer mode**, click
+   **Load unpacked** and pick this repository's root folder (the one with
+   `manifest.json` in it).
+3. Open your SHEIN cart, click the extension's toolbar icon to open the side
+   panel, then click **Import from this cart**.
+
+On click, the extension runs `SheinParser.capture()` in the SHEIN tab and hands
+back only the cart lines and totals. Your address, member id and session
+tokens stay in the tab. It reads the cart data the page loaded with, so if you
+tick or change items, reload the cart page before importing.
+
+It asks for the side panel, script injection, and access to `*.shein.com` only.
+
+For development, open
+`chrome-extension://<id>/extension/panel.html?app=http://localhost:8000/` to
+frame a local copy instead of the hosted one.
+
+## When the parser breaks
+
+All SHEIN-specific code is in `parsers/shein.js`. The cart is read from the
+`gbCartSsrData` object SHEIN embeds in the cart page. If imports start failing
+or prices look wrong, save a fresh copy of the cart page, check that object's
+`originCartInfo.mallCartInfo.mallCarts[].shops[].contentData[].productLineInfoList[]`
+structure, and adjust the mapping there. Don't commit the saved page: it holds
+your address and session token, and `.gitignore` already excludes the usual
+names.
 
 See `CLAUDE.md` for the full data model and the project's constraints.

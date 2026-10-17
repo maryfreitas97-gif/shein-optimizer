@@ -58,7 +58,7 @@ input,select,textarea{
 }
 select{background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);
   background-position:calc(100% - 16px) 19px,calc(100% - 11px) 19px;background-size:5px 5px,5px 5px;background-repeat:no-repeat;padding-right:32px}
-textarea{min-height:110px;line-height:1.35;font-size:14px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+textarea{min-height:110px;line-height:1.35;font-size:16px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
 input:focus,select:focus,textarea:focus{outline:2px solid var(--accent);outline-offset:-1px}
 label.f{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:8px}
 label.f > span{display:block;margin-bottom:3px}
@@ -164,6 +164,9 @@ footer.foot{color:var(--muted);font-size:12px;text-align:center;padding:14px 8px
 .spin{display:inline-block;width:15px;height:15px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:sp .7s linear infinite}
 @keyframes sp{to{transform:rotate(360deg)}}
 .stale{color:var(--warn);font-size:12px}
+.btn[hidden]{display:none}
+.imp{margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
+.imp .banner{margin:8px 0 0}
 </style>
 </head>
 <body>
@@ -182,6 +185,19 @@ footer.foot{color:var(--muted);font-size:12px;text-align:center;padding:14px 8px
       <button class="btn primary" id="addItemBtn">+ Add item</button>
       <button class="btn ghost" id="demoBtn">Sample cart</button>
       <button class="btn ghost danger" id="clearItemsBtn">Clear</button>
+    </div>
+    <div class="imp">
+      <label class="f"><span>Import from a SHEIN cart</span>
+        <select id="impScope">
+          <option value="checked">Only items ticked for checkout</option>
+          <option value="all">Every line in the cart</option>
+        </select>
+      </label>
+      <div class="btnrow">
+        <button class="btn primary" id="extImportBtn" hidden>Import from this cart</button>
+        <button class="btn" id="pasteCartBtn">Paste captured cart</button>
+      </div>
+      <div id="impNotes"></div>
     </div>
   </section>
 
@@ -241,7 +257,7 @@ footer.foot{color:var(--muted);font-size:12px;text-align:center;padding:14px 8px
   </section>
 
   <footer class="foot">
-    Cart Split Optimizer &mdash; <span class="verText"></span> &middot; step 1: manual entry<br>
+    Cart Split Optimizer &mdash; <span class="verText"></span> &middot; step 2: cart import<br>
     Read-only. Nothing here logs in, adds to a cart, or checks out.
   </footer>
 </div>
@@ -254,6 +270,7 @@ footer.foot{color:var(--muted);font-size:12px;text-align:center;padding:14px 8px
 <div class="ov" id="overlay" hidden><div class="sheet" id="sheet"></div></div>
 
 <script src="https://cdn.jsdelivr.net/npm/javascript-lp-solver@0.4.24/prod/solver.js" defer></script>
+<script src="parsers/shein.js"></script>
 <script>
 "use strict";
 /* ==========================================================================
@@ -261,7 +278,7 @@ footer.foot{color:var(--muted);font-size:12px;text-align:center;padding:14px 8px
    Step 1: manual entry -> optimizer -> plan. No network except the CDN solver.
    ========================================================================== */
 
-var VERSION = "0.1.0";
+var VERSION = "0.2.0";
 var STORE_KEY = "sco.v1";
 var TIME_BUDGET_MS = 2600;          /* hard ceiling; target is < 3s on an A-series iPad */
 var MILP_MAX_ITEMS = 12;            /* above this the MILP branch-and-bound is too slow */
@@ -301,7 +318,7 @@ var state = {
   coupons: [],
   offers: [],
   shipping: { freeThreshold: 29, flatFee: 3.99, perOrder: true, measure: "after" },
-  settings: { maxOrders: 3, currency: "$" },
+  settings: { maxOrders: 3, currency: "$", importScope: "checked" },
   done: {},
   categories: []
 };
@@ -394,6 +411,7 @@ function adopt(d) {
   if (d.settings) {
     state.settings.maxOrders = Math.min(5, Math.max(1, parseInt(d.settings.maxOrders, 10) || 3));
     state.settings.currency = d.settings.currency || "$";
+    state.settings.importScope = d.settings.importScope === "all" ? "all" : "checked";
   }
   state.done = d.done || {};
   state.categories = d.categories || [];
@@ -821,6 +839,7 @@ function renderSettings() {
   $("#setMeasure").value = state.shipping.measure;
   $("#setMaxOrders").value = String(state.settings.maxOrders);
   $("#setCurrency").value = state.settings.currency;
+  $("#impScope").value = state.settings.importScope;
 }
 ["setFreeThresh", "setFlatFee", "setMeasure", "setMaxOrders", "setCurrency"].forEach(function (id) {
   $("#" + id).addEventListener("input", function () {
@@ -860,8 +879,86 @@ $("#resetBtn").addEventListener("click", function () {
   try { localStorage.removeItem(STORE_KEY); } catch (e) {}
   state.items = []; state.coupons = []; state.offers = []; state.done = {}; state.categories = [];
   state.shipping = { freeThreshold: 29, flatFee: 3.99, perOrder: true, measure: "after" };
-  state.settings = { maxOrders: 3, currency: "$" };
+  state.settings = { maxOrders: 3, currency: "$", importScope: "checked" };
   renderAll(); save(); markStale();
+});
+
+/* ---------------------------------------------------------- cart import --
+   Input mode C. The paste box and the extension's "Import from this cart"
+   button both end up in importCart(), which hands the payload to
+   parsers/shein.js. All SHEIN-specific knowledge stays in that file. */
+var importNote = null;
+function importCart(payload, source) {
+  if (!window.SheinParser) throw new Error("The cart parser (parsers/shein.js) did not load. Reload the page.");
+  var r = window.SheinParser.parse(payload, { include: state.settings.importScope });
+  if (!r.items.length) {
+    importNote = { kind: "bad", msg: "No items imported from " + esc(source) + ".", list: r.warnings };
+    renderImportNote();
+    return;
+  }
+  if (state.items.length && !confirm("Replace the " + state.items.length + " item lines in the table with " +
+      r.items.length + " from the cart? Coupons, card offers and settings stay.")) return;
+  state.items = r.items.map(newItem);
+  state.done = {};
+  renderAll(); save(); markStale();
+  var tableC = state.items.reduce(function (s, it) { return s + itemValueC(it); }, 0);
+  var cartC = r.meta.cartTotal == null ? null : toC(r.meta.cartTotal);
+  var msg = "Imported " + r.items.length + " line" + (r.items.length > 1 ? "s" : "") + " from " + esc(source) +
+    " (" + (r.meta.include === "all" ? "every line" : "ticked items only") + "), " + fmt(tableC) + " in all.";
+  if (r.meta.include === "checked" && cartC != null && cartC !== tableC)
+    msg += " <b>SHEIN&rsquo;s cart shows " + fmt(cartC) + "</b>; check the prices below.";
+  importNote = { kind: "good", msg: msg, list: r.warnings };
+  if (source === "this SHEIN tab") importNote.list = ["This reads the cart data the SHEIN page loaded with. " +
+    "If you ticked, unticked or changed items since, reload the cart page and import again."].concat(r.warnings);
+  renderImportNote();
+}
+function renderImportNote() {
+  var n = importNote;
+  $("#impNotes").innerHTML = !n ? "" :
+    '<div class="banner ' + n.kind + '">' + n.msg + "</div>" +
+    (n.list || []).map(function (w) { return '<div class="banner warn">' + esc(w) + "</div>"; }).join("");
+}
+function tryImport(payload, source) {
+  try { importCart(payload, source); }
+  catch (err) { importNote = { kind: "bad", msg: "Import failed: " + esc(err.message) }; renderImportNote(); }
+}
+$("#impScope").addEventListener("change", function () {
+  state.settings.importScope = $("#impScope").value === "all" ? "all" : "checked";
+  save();
+});
+$("#pasteCartBtn").addEventListener("click", function () {
+  openSheet("Paste captured cart",
+    '<p class="note">Paste the JSON from the Shortcut or bookmarklet. The page source of the SHEIN cart page works too. ' +
+    "Items in the table are replaced; coupons, card offers and settings stay.</p>" +
+    '<textarea id="cartBox" placeholder="{ &quot;capturedBy&quot;: &quot;shein &hellip;" }"></textarea>', function () {
+      tryImport($("#cartBox").value, "the pasted cart");
+    });
+});
+
+/* Chrome extension bridge. When this page is framed by the extension's side
+   panel, the panel says hello and the import button appears. A click asks
+   the panel to run SheinParser.capture() in the SHEIN tab; the panel posts
+   back that capture and nothing else. Without the extension, nothing here
+   runs and the page is unchanged. */
+var extOrigin = null;
+window.addEventListener("message", function (e) {
+  if (window.parent === window || e.source !== window.parent) return;
+  if (!/^chrome-extension:\/\/[a-p]{32}$/.test(e.origin)) return;
+  var m = e.data;
+  if (!m || m.app !== "sco-ext") return;
+  if (m.type === "hello") {
+    extOrigin = e.origin;
+    $("#extImportBtn").hidden = false;
+  } else if (m.type === "capture" && e.origin === extOrigin) {
+    $("#extImportBtn").disabled = false;
+    if (m.error) { importNote = { kind: "bad", msg: esc(m.error) }; renderImportNote(); }
+    else tryImport(m.data, "this SHEIN tab");
+  }
+});
+$("#extImportBtn").addEventListener("click", function () {
+  if (!extOrigin) return;
+  $("#extImportBtn").disabled = true;
+  window.parent.postMessage({ app: "sco", type: "capture-request" }, extOrigin);
 });
 
 function copyText(text, btn) {
