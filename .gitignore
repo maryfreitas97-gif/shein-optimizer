@@ -1,1 +1,5 @@
 .DS_Store
+# Raw SHEIN captures contain your address, member id and session token
+cart.json*
+cart*.rtf
+capture*.json
